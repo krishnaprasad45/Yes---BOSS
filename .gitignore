@@ -1,0 +1,43 @@
+# deps
+node_modules/
+
+# builds
+dist/
+build/
+*.tsbuildinfo
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+yarn-error.log
+
+# prisma
+apps/backend/prisma/migrations/**/migration_lock.toml.bak
+
+# android
+apps/mobile/android/.gradle/
+apps/mobile/android/app/build/
+apps/mobile/android/build/
+apps/mobile/android/local.properties
+*.keystore
+!debug.keystore
+
+# ios
+apps/mobile/ios/Pods/
+apps/mobile/ios/build/
+*.xcuserstate
+
+# metro / rn
+.metro-health-check*
+apps/mobile/vendor/
+
+# editor / os
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

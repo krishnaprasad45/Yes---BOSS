@@ -1,0 +1,28 @@
+{
+  "name": "yes-boss",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "nohoist": [
+      "**/react-native",
+      "**/react-native/**",
+      "**/@react-native/**",
+      "**/@react-native-community/**"
+    ]
+  },
+  "scripts": {
+    "backend": "yarn workspace @yes-boss/backend start:dev",
+    "mobile": "yarn workspace @yes-boss/mobile start",
+    "android": "yarn workspace @yes-boss/mobile android",
+    "typecheck": "tsc -b packages/shared apps/backend",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

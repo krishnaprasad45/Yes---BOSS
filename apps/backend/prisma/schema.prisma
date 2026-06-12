@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  name          String
+  passwordHash  String
+  refreshTokens RefreshToken[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Call {
+  id             String   @id @default(uuid())
+  contactName    String?
+  phoneNumber    String
+  direction      String // incoming | outgoing | missed | rejected
+  durationSec    Int      @default(0)
+  occurredAt     DateTime
+  recordingUrl   String?
+  sourceFileName String?
+  transcript     String?
+  summary        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([phoneNumber, occurredAt]) // dedupe re-synced calls
+  @@index([occurredAt])
+}
+
+model SmsTxn {
+  id          String    @id @default(uuid())
+  type        String // debit | credit | payment_due | spam | unknown
+  amountMinor Int?
+  currency    String    @default("INR")
+  merchant    String?
+  source      String?
+  category    String?
+  rawBody     String
+  sender      String
+  receivedAt  DateTime
+  dueAt       DateTime?
+  dedupeKey   String    @unique
+  createdAt   DateTime  @default(now())
+
+  @@index([receivedAt])
+  @@index([type])
+}
