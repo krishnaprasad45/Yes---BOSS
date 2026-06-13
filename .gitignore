@@ -6,6 +6,12 @@ dist/
 build/
 *.tsbuildinfo
 
+# stray TS emit outside dist (source dirs stay .ts only)
+packages/shared/src/*.js
+packages/shared/src/*.d.ts
+apps/backend/prisma/*.js
+apps/backend/prisma/*.d.ts
+
 # env / secrets
 .env
 .env.*
