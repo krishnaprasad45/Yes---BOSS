@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Permits cleartext HTTP only to local dev hosts (the backend runs over HTTP on
+  the dev machine, reached via `adb reverse` as localhost, or the emulator host
+  10.0.2.2, or a LAN IP). All other traffic stays cleartext-blocked. Replace
+  with HTTPS-only before any real distribution.
+-->
+<network-security-config>
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="true">localhost</domain>
+    <domain includeSubdomains="true">127.0.0.1</domain>
+    <domain includeSubdomains="true">10.0.2.2</domain>
+  </domain-config>
+</network-security-config>
