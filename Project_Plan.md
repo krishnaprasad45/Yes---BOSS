@@ -158,36 +158,62 @@ After a completed call **with a saved contact**, generate a recap:
 
 ## 6. Phased Roadmap
 
-### Phase 0 — Scaffold
-- Monorepo (yarn workspaces), folder structure, shared types package.
-- Backend skeleton (NestJS + Prisma + Postgres), auth lock on API.
-- File storage (MinIO/B2) wired.
-- Bare RN app shell + navigation.
+**Overall progress: ~14%** (1 of 7 phases complete)
 
-### Phase 1 — SMS analytics (Feature 2)
+| Phase | Status | % |
+|---|---|---|
+| Phase 0 — Scaffold | ✅ Complete | 100% |
+| Phase 1 — SMS analytics | ⬜ Not started | 0% |
+| Phase 2 — Call backup | ⬜ Not started | 0% |
+| Phase 3 — Missed-call auto-reply | ⬜ Not started | 0% |
+| Phase 4 — Post-call recap | ⬜ Not started | 0% |
+| Phase 5 — Analytics & stats | ⬜ Not started | 0% |
+| Phase 6 — iOS client | ⬜ Not started | 0% |
+| Phase 7 — Upcoming features | ⬜ Not started | 0% |
+
+### Phase 0 — Scaffold ✅ 100%
+- [x] Monorepo (yarn workspaces), folder structure, shared types package.
+- [x] Backend skeleton (NestJS + Prisma + Postgres), auth lock on API
+      (JWT + refresh-token rotation). Backend runs on **:4000**.
+- [x] File storage (MinIO/B2) wired (MinIO container running; upload wiring
+      lands in Phase 2).
+- [x] Bare RN app shell + navigation (React Query, Keychain tokens, auth gate,
+      login + dashboard screens).
+- [x] **Verified on real device** (Samsung SM-G885F): login → JWT → dashboard
+      shows API ✓ DB ✓.
+
+> Device build notes (learned the hard way): RN 0.86 forces New Architecture;
+> use a **release build** (`installRelease`, embedded JS bundle) for the device —
+> the dev/Metro path was unreliable here. Release needs the cleartext
+> network-security config for the localhost backend. Build needs JDK 17 +
+> Android SDK (installed).
+
+### Phase 1 — SMS analytics (Feature 2) ⬜ 0%
 - Read SMS, parse top banks, store transactions, basic analytics screen.
 - Proves the full pipeline: device → backend → DB → dashboard.
+- Groundwork done in Phase 0: SMS parser skeleton (`services/smsParsers/`),
+  `SmsTxn` shared contract types.
 
-### Phase 2 — Call backup (Feature 1)
+### Phase 2 — Call backup (Feature 1) ⬜ 0%
 - FileObserver folder-sync, call-log matching, contact name resolution, upload.
 - Calls made/received dashboard.
 
-### Phase 3 — Missed-call auto-reply (Android)
+### Phase 3 — Missed-call auto-reply (Android) ⬜ 0%
 - Call-state detection + configurable auto-SMS (default message with `— AI Assistant` signature).
 
-### Phase 4 — Post-call recap (Android)
+### Phase 4 — Post-call recap (Android) ⬜ 0%
 - Whisper transcription + LLM summary pipeline on backend.
 - Self-recap delivery (default); opt-in recap-to-contact.
 - WhatsApp/email delivery channel.
 
-### Phase 5 — Analytics & stats
+### Phase 5 — Analytics & stats ⬜ 0%
 - Usage time, spending patterns, daily digest.
 
-### Phase 6 — iOS client
+### Phase 6 — iOS client ⬜ 0%
 - Build iOS as a view/dashboard client over the shared backend.
 - iOS-capable capture only: photo/video backup, location/KM.
 
-### Phase 7 — Upcoming features
+### Phase 7 — Upcoming features ⬜ 0%
 - File search, KM traveled, peak usage, subscription detector, etc.
 
 ---
