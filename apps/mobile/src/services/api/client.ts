@@ -2,10 +2,20 @@ import { Platform } from 'react-native';
 import type { AuthTokens, ItemResponse } from '@yes-boss/shared';
 import { clearTokens, getTokens, setTokens } from './tokenStore';
 
-// Android emulator reaches the host machine via 10.0.2.2.
-// Physical device: replace with your PC's LAN IP (Settings screen later).
-export const BASE_URL =
-  Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+// Host that serves the backend API, as reachable FROM the device.
+// - Physical device (USB/wireless): PC's LAN IP on the shared network.
+// - Android emulator: 10.0.2.2 maps to the host loopback.
+// Change DEV_HOST when your network/IP changes (e.g. switching wifi/hotspot).
+// Physical device over USB uses `adb reverse tcp:4000 tcp:4000`, so localhost
+// on the device tunnels to the PC — robust against wifi/IP changes. For a LAN
+// (wireless) setup instead, set DEV_HOST to the PC's current LAN IP.
+const DEV_HOST = 'localhost'; // via adb reverse (USB)
+const API_PORT = 4000; // backend port (3000 used by another local project)
+const USE_EMULATOR = false; // set true only when running on an Android emulator
+
+export const BASE_URL = USE_EMULATOR
+  ? `http://10.0.2.2:${API_PORT}`
+  : `http://${DEV_HOST}:${API_PORT}`;
 
 export class ApiError extends Error {
   constructor(

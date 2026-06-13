@@ -47,3 +47,5 @@ apps/mobile/vendor/
 .idea/
 .DS_Store
 Thumbs.db
+.tmp_*.png
+*.tsx.bak
