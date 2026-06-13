@@ -2,13 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
+    "rootDir": "src",
     "baseUrl": ".",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
-    "paths": {
-      "@yes-boss/shared": ["../../packages/shared/src"]
-    }
+    "incremental": false
   },
-  "include": ["src", "prisma/seed.ts"]
+  "include": ["src"]
 }

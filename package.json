@@ -18,7 +18,8 @@
     "backend": "yarn workspace @yes-boss/backend start:dev",
     "mobile": "yarn workspace @yes-boss/mobile start",
     "android": "yarn workspace @yes-boss/mobile android",
-    "typecheck": "tsc -b packages/shared apps/backend",
+    "shared:build": "yarn workspace @yes-boss/shared build",
+    "typecheck": "yarn workspace @yes-boss/shared typecheck && yarn workspace @yes-boss/backend typecheck && yarn workspace @yes-boss/mobile typecheck",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down"
   },
