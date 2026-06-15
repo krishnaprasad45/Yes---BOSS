@@ -158,12 +158,12 @@ After a completed call **with a saved contact**, generate a recap:
 
 ## 6. Phased Roadmap
 
-**Overall progress: ~14%** (1 of 7 phases complete)
+**Overall progress: ~26%** (1 of 7 phases complete, Phase 1 ~85%)
 
 | Phase | Status | % |
 |---|---|---|
 | Phase 0 — Scaffold | ✅ Complete | 100% |
-| Phase 1 — SMS analytics | ⬜ Not started | 0% |
+| Phase 1 — SMS analytics | 🟡 In progress | 85% |
 | Phase 2 — Call backup | ⬜ Not started | 0% |
 | Phase 3 — Missed-call auto-reply | ⬜ Not started | 0% |
 | Phase 4 — Post-call recap | ⬜ Not started | 0% |
@@ -188,11 +188,18 @@ After a completed call **with a saved contact**, generate a recap:
 > network-security config for the localhost backend. Build needs JDK 17 +
 > Android SDK (installed).
 
-### Phase 1 — SMS analytics (Feature 2) ⬜ 0%
-- Read SMS, parse top banks, store transactions, basic analytics screen.
+### Phase 1 — SMS analytics (Feature 2) 🟡 85%
+- [x] Backend SMS module: sync (idempotent dedupe), list (paginated +
+      filters), summary (totals + category breakdown + due count). Committed.
+- [x] On-device SMS parsing pipeline (`services/smsParsers/`) +
+      djb2 dedupe key shared with the backend.
+- [x] Mobile UI: Spending screen (summary cards, type filters, infinite
+      scroll, pull-to-refresh), bottom-tab nav.
+- [x] Native Android SMS-read module (Kotlin: `READ_SMS` + inbox query) with
+      JS bridge, runtime-permission flow, and a "Sync SMS" action.
+- [ ] **Device verify**: build/install release, grant READ_SMS, scan inbox,
+      confirm real transactions land in the Spending screen.
 - Proves the full pipeline: device → backend → DB → dashboard.
-- Groundwork done in Phase 0: SMS parser skeleton (`services/smsParsers/`),
-  `SmsTxn` shared contract types.
 
 ### Phase 2 — Call backup (Feature 1) ⬜ 0%
 - FileObserver folder-sync, call-log matching, contact name resolution, upload.

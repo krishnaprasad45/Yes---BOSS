@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import type { SmsTxn, TxnType } from '@yes-boss/shared';
 import { useSmsTxnList, useSpendingSummary } from '@/hooks/useSmsTxns';
+import { useInboxSync } from '@/hooks/useInboxSync';
 import { SmsTxnCard } from '@/components/feature/SmsTxnCard';
 import { SpendingSummaryCards } from '@/components/feature/SpendingSummaryCards';
 
@@ -30,6 +31,7 @@ export function SpendingScreen() {
   );
 
   const summary = useSpendingSummary();
+  const { sync, isSyncing } = useInboxSync();
   const {
     data,
     isLoading,
@@ -61,7 +63,19 @@ export function SpendingScreen() {
       }
       ListHeaderComponent={
         <View>
-          <Text style={styles.title}>Spending</Text>
+          <View style={styles.header}>
+            <Text style={styles.title}>Spending</Text>
+            <TouchableOpacity
+              style={[styles.syncBtn, isSyncing && styles.syncBtnDisabled]}
+              disabled={isSyncing}
+              onPress={sync}>
+              {isSyncing ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.syncBtnText}>Sync SMS</Text>
+              )}
+            </TouchableOpacity>
+          </View>
           {summary.data && <SpendingSummaryCards summary={summary.data.data} />}
           <View style={styles.filterRow}>
             {FILTERS.map(f => (
@@ -92,7 +106,24 @@ export function SpendingScreen() {
 
 const styles = StyleSheet.create({
   list: { flex: 1, backgroundColor: '#fff' },
-  title: { fontSize: 28, fontWeight: '700', paddingHorizontal: 16, paddingTop: 16 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  title: { fontSize: 28, fontWeight: '700' },
+  syncBtn: {
+    backgroundColor: '#111',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 20,
+    minWidth: 88,
+    alignItems: 'center',
+  },
+  syncBtnDisabled: { opacity: 0.5 },
+  syncBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
   filterRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 8 },
   chip: {
     paddingHorizontal: 14,
