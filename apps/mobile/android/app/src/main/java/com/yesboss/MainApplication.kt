@@ -8,6 +8,7 @@ import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.yesboss.smsreader.SmsReaderPackage
 import com.yesboss.callbackup.CallBackupPackage
+import com.yesboss.autoreply.AutoReplyPackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -18,6 +19,7 @@ class MainApplication : Application(), ReactApplication {
         PackageList(this).packages.apply {
           add(SmsReaderPackage())
           add(CallBackupPackage())
+          add(AutoReplyPackage())
         },
     )
   }

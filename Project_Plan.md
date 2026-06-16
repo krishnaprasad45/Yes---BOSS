@@ -158,14 +158,14 @@ After a completed call **with a saved contact**, generate a recap:
 
 ## 6. Phased Roadmap
 
-**Overall progress: ~37%** (Phase 0 done; Phases 1 & 2 ~85%, device-verify pending)
+**Overall progress: ~48%** (Phase 0 done; Phases 1–3 ~85%, device-verify pending)
 
 | Phase | Status | % |
 |---|---|---|
 | Phase 0 — Scaffold | ✅ Complete | 100% |
 | Phase 1 — SMS analytics | 🟡 In progress | 85% |
 | Phase 2 — Call backup | 🟡 In progress | 85% |
-| Phase 3 — Missed-call auto-reply | ⬜ Not started | 0% |
+| Phase 3 — Missed-call auto-reply | 🟡 In progress | 85% |
 | Phase 4 — Post-call recap | ⬜ Not started | 0% |
 | Phase 5 — Analytics & stats | ⬜ Not started | 0% |
 | Phase 6 — iOS client | ⬜ Not started | 0% |
@@ -217,8 +217,18 @@ After a completed call **with a saved contact**, generate a recap:
 - [ ] **Device verify**: grant READ_CALL_LOG + audio, back up, confirm calls
       + recordings land and play via the presigned URL.
 
-### Phase 3 — Missed-call auto-reply (Android) ⬜ 0%
-- Call-state detection + configurable auto-SMS (default message with `— AI Assistant` signature).
+### Phase 3 — Missed-call auto-reply (Android) 🟡 85%
+- [x] Backend AutoReplyConfig (enabled, message, signature, cooldown) +
+      GET/PUT /settings/auto-reply. **Verified via node.**
+- [x] Native AutoReplyReceiver (PHONE_STATE): ring→idle = missed, looks up the
+      missed number from the call log, sends the auto-SMS via SmsManager with a
+      per-number cooldown; config in SharedPreferences.
+- [x] AutoReplyModule bridge (JS pushes server config to native) +
+      SEND_SMS / READ_PHONE_STATE permission flow.
+- [x] settings API + useAutoReply hook (mirrors server config to native) +
+      SettingsScreen (toggle, message, signature, cooldown) + Settings tab.
+- [ ] **Device verify**: enable, miss a call, confirm the caller gets the
+      auto-SMS and the cooldown suppresses repeats.
 
 ### Phase 4 — Post-call recap (Android) ⬜ 0%
 - Whisper transcription + LLM summary pipeline on backend.

@@ -8,6 +8,9 @@
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+    <!-- Missed-call auto-reply. -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
 
     <application
       android:name=".MainApplication"
@@ -31,5 +34,13 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+
+      <receiver
+        android:name="com.yesboss.autoreply.AutoReplyReceiver"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.PHONE_STATE" />
+        </intent-filter>
+      </receiver>
     </application>
 </manifest>

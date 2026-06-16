@@ -4,11 +4,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { HomeScreen } from '@/screens/HomeScreen';
 import { SpendingScreen } from '@/screens/SpendingScreen';
 import { CallsScreen } from '@/screens/CallsScreen';
+import { SettingsScreen } from '@/screens/SettingsScreen';
 
 export type AppTabsParamList = {
   Dashboard: undefined;
   Spending: undefined;
   Calls: undefined;
+  Settings: undefined;
 };
 
 const Tab = createBottomTabNavigator<AppTabsParamList>();
@@ -42,6 +44,11 @@ export function AppTabs() {
         name="Calls"
         component={CallsScreen}
         options={{ tabBarIcon: tabIcon('📞') }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ tabBarIcon: tabIcon('⚙️') }}
       />
     </Tab.Navigator>
   );
