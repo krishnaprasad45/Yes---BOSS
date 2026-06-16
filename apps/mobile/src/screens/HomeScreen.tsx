@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useDailyDigest,
@@ -17,6 +18,15 @@ import {
   useSubscriptions,
 } from '@/hooks/useDashboard';
 import { formatMinor } from '@/utils/formatters';
+import { colors, font, radius, spacing } from '@/theme/theme';
+import { Card, IconTile, SectionHeader, StatCard } from '@/components/ui';
+
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good Morning';
+  if (h < 17) return 'Good Afternoon';
+  return 'Good Evening';
+}
 
 function formatTalk(sec: number): string {
   if (sec <= 0) return '0m';
@@ -31,9 +41,9 @@ function formatHour(h: number): string {
   return `${display}${period}`;
 }
 
-/** Analytics dashboard: today's digest + last-30-day call & spending stats. */
+/** Dashboard — greeting, today's overview grid, 30-day insights. */
 export function HomeScreen() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const overview = useDashboardStats();
   const digest = useDailyDigest();
   const subs = useSubscriptions();
@@ -59,44 +69,56 @@ export function HomeScreen() {
   );
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-      <Text style={styles.title}>Dashboard</Text>
-
-      {overview.isLoading && <ActivityIndicator style={{ marginTop: 24 }} size="large" />}
-      {overview.error && <Text style={styles.error}>{overview.error.message}</Text>}
-
-      {day && (
-        <Section title="Today">
-          <View style={styles.row}>
-            <Stat label="Spent" value={formatMinor(day.spentMinor)} color="#c0392b" />
-            <Stat label="Received" value={formatMinor(day.creditedMinor)} color="#27ae60" />
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        {/* Greeting header */}
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.greeting}>{greeting()},</Text>
+            <Text style={styles.name}>{user?.name ?? 'there'} 👋</Text>
           </View>
-          <View style={styles.row}>
-            <Stat label="Calls" value={String(day.callsCount)} />
-            <Stat label="Missed" value={String(day.missedCount)} color="#c0392b" />
-            <Stat label="Bills due" value={String(day.billsDue)} color="#d35400" />
-          </View>
-        </Section>
-      )}
+          <TouchableOpacity style={styles.bell} onPress={logout}>
+            <Text style={{ fontSize: 18 }}>⏻</Text>
+          </TouchableOpacity>
+        </View>
 
-      {stats && (
-        <>
-          <Section title="Last 30 days · Calls">
-            <View style={styles.row}>
-              <Stat label="Total" value={String(stats.calls.total)} />
-              <Stat label="Missed" value={String(stats.calls.missed)} color="#c0392b" />
-              <Stat label="Talk time" value={formatTalk(stats.calls.totalTalkSec)} />
+        {overview.isLoading && <ActivityIndicator style={{ marginTop: 32 }} size="large" color={colors.primary} />}
+        {overview.error && <Text style={styles.error}>{overview.error.message}</Text>}
+
+        {/* Today's overview grid */}
+        {day && (
+          <>
+            <SectionHeader title="Today's Overview" />
+            <View style={styles.grid}>
+              <StatCard glyph="📞" tileBg={colors.tileIndigo} value={String(day.callsCount)} label="Calls Today" />
+              <StatCard glyph="💸" tileBg={colors.tileGreen} value={formatMinor(day.spentMinor)} label="Spent Today" />
             </View>
-            <View style={styles.row}>
-              <Stat label="Incoming" value={String(stats.calls.incoming)} />
-              <Stat label="Outgoing" value={String(stats.calls.outgoing)} />
+            <View style={styles.grid}>
+              <StatCard
+                glyph="📍"
+                tileBg={colors.tileTeal}
+                value={distance.data ? `${distance.data.data.totalKm} km` : '—'}
+                label="Distance (30d)"
+              />
+              <StatCard glyph="🧾" tileBg={colors.tileOrange} value={String(day.billsDue)} label="Bills Due" />
+            </View>
+          </>
+        )}
+
+        {/* 30-day calls */}
+        {stats && (
+          <Card style={styles.block}>
+            <SectionHeader title="Last 30 days · Calls" />
+            <View style={styles.inlineStats}>
+              <Inline label="Total" value={String(stats.calls.total)} />
+              <Inline label="Missed" value={String(stats.calls.missed)} color={colors.danger} />
+              <Inline label="Talk time" value={formatTalk(stats.calls.totalTalkSec)} />
             </View>
             {stats.calls.topContacts.length > 0 && (
-              <View style={styles.block}>
-                <Text style={styles.blockTitle}>Top contacts</Text>
+              <View style={styles.list}>
+                <Text style={styles.listHead}>Top contacts</Text>
                 {stats.calls.topContacts.map(c => (
                   <View key={c.name} style={styles.listRow}>
                     <Text style={styles.listName}>{c.name}</Text>
@@ -105,71 +127,61 @@ export function HomeScreen() {
                 ))}
               </View>
             )}
-          </Section>
+          </Card>
+        )}
 
-          <Section title="Last 30 days · Money">
-            <View style={styles.row}>
-              <Stat label="Spent" value={formatMinor(stats.spending.totalSpent)} color="#c0392b" />
-              <Stat label="Received" value={formatMinor(stats.spending.totalCredited)} color="#27ae60" />
+        {/* 30-day money */}
+        {stats && (
+          <Card style={styles.block}>
+            <SectionHeader title="Last 30 days · Money" />
+            <View style={styles.inlineStats}>
+              <Inline label="Spent" value={formatMinor(stats.spending.totalSpent)} color={colors.danger} />
+              <Inline label="Received" value={formatMinor(stats.spending.totalCredited)} color={colors.success} />
             </View>
-            <View style={styles.row}>
-              <Stat label="Net" value={formatMinor(stats.spending.netMinor)} />
-              <Stat label="Bills due" value={String(stats.spending.dueCount)} color="#d35400" />
+            <View style={styles.inlineStats}>
+              <Inline label="Net" value={formatMinor(stats.spending.netMinor)} />
+              <Inline label="Bills due" value={String(stats.spending.dueCount)} color={colors.warning} />
             </View>
-          </Section>
-        </>
-      )}
+          </Card>
+        )}
 
-      {subscriptions.length > 0 && (
-        <Section title="Subscriptions detected">
-          <View style={styles.block}>
+        {/* Subscriptions */}
+        {subscriptions.length > 0 && (
+          <Card style={styles.block}>
+            <SectionHeader title="Subscriptions detected" />
             {subscriptions.map(s => (
-              <View key={s.merchant} style={styles.listRow}>
-                <Text style={styles.listName}>
-                  {s.merchant}
-                  <Text style={styles.subMeta}>  · every {s.cadenceDays}d</Text>
-                </Text>
-                <Text style={styles.listVal}>{formatMinor(s.amountMinor)}</Text>
+              <View key={s.merchant} style={styles.subRow}>
+                <IconTile glyph="🔁" bg={colors.tilePurple} size={38} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.subName}>{s.merchant}</Text>
+                  <Text style={styles.subMeta}>every {s.cadenceDays} days</Text>
+                </View>
+                <Text style={styles.subAmt}>{formatMinor(s.amountMinor)}</Text>
               </View>
             ))}
-          </View>
-        </Section>
-      )}
+          </Card>
+        )}
 
-      {(busiest.hour >= 0 || distance.data) && (
-        <Section title="Activity">
-          <View style={styles.row}>
-            {busiest.hour >= 0 && (
-              <Stat label="Busiest hour" value={formatHour(busiest.hour)} />
-            )}
-            {distance.data && (
-              <Stat label="Distance (30d)" value={`${distance.data.data.totalKm} km`} />
-            )}
-          </View>
-        </Section>
-      )}
-
-      <TouchableOpacity style={[styles.btn, styles.secondary]} onPress={logout}>
-        <Text style={styles.btnText}>Log out</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        {/* Activity */}
+        {(busiest.hour >= 0 || distance.data) && (
+          <Card style={styles.block}>
+            <SectionHeader title="Activity" />
+            <View style={styles.inlineStats}>
+              {busiest.hour >= 0 && <Inline label="Busiest hour" value={formatHour(busiest.hour)} />}
+              {distance.data && <Inline label="Distance (30d)" value={`${distance.data.data.totalKm} km`} />}
+            </View>
+          </Card>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Inline({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {children}
-    </View>
-  );
-}
-
-function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <View style={styles.stat}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={[styles.statValue, color ? { color } : null]} numberOfLines={1}>
+    <View style={styles.inline}>
+      <Text style={styles.inlineLabel}>{label}</Text>
+      <Text style={[styles.inlineValue, color ? { color } : null]} numberOfLines={1}>
         {value}
       </Text>
     </View>
@@ -177,29 +189,38 @@ function Stat({ label, value, color }: { label: string; value: string; color?: s
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 16, paddingBottom: 32 },
-  title: { fontSize: 28, fontWeight: '700' },
-  error: { color: '#c00', marginTop: 16 },
-  section: { marginTop: 20, gap: 12 },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: '#555' },
-  row: { flexDirection: 'row', gap: 12 },
-  stat: { flex: 1, backgroundColor: '#f5f5f5', borderRadius: 12, padding: 14 },
-  statLabel: { fontSize: 12, color: '#777' },
-  statValue: { fontSize: 20, fontWeight: '700', color: '#111', marginTop: 4 },
-  block: { backgroundColor: '#f5f5f5', borderRadius: 12, padding: 14 },
-  blockTitle: { fontSize: 13, fontWeight: '600', color: '#444', marginBottom: 8 },
-  listRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  listName: { fontSize: 15, color: '#333' },
-  subMeta: { fontSize: 13, color: '#999' },
-  listVal: { fontSize: 15, fontWeight: '600', color: '#111' },
-  btn: {
-    backgroundColor: '#111',
-    borderRadius: 10,
-    paddingVertical: 14,
+  safe: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
+  headerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 28,
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
   },
-  secondary: { backgroundColor: '#666' },
-  btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  greeting: { fontSize: font.size.sm, color: colors.textMuted },
+  name: { fontSize: font.size.xxl, fontWeight: '700', color: colors.text },
+  bell: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.pill,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  error: { color: colors.danger, marginTop: spacing.lg },
+  grid: { flexDirection: 'row', gap: spacing.md },
+  block: { gap: spacing.md },
+  inlineStats: { flexDirection: 'row', gap: spacing.md },
+  inline: { flex: 1, backgroundColor: colors.cardAlt, borderRadius: radius.md, padding: spacing.md },
+  inlineLabel: { fontSize: font.size.xs, color: colors.textMuted },
+  inlineValue: { fontSize: font.size.lg, fontWeight: '700', color: colors.text, marginTop: 2 },
+  list: { backgroundColor: colors.cardAlt, borderRadius: radius.md, padding: spacing.md },
+  listHead: { fontSize: font.size.sm, fontWeight: '600', color: colors.textMuted, marginBottom: 6 },
+  listRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
+  listName: { fontSize: font.size.md, color: colors.text },
+  listVal: { fontSize: font.size.md, fontWeight: '700', color: colors.text },
+  subRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 6 },
+  subName: { fontSize: font.size.md, fontWeight: '600', color: colors.text },
+  subMeta: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 1 },
+  subAmt: { fontSize: font.size.md, fontWeight: '700', color: colors.text },
 });

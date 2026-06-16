@@ -1,65 +1,91 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { Call } from '@yes-boss/shared';
 import { formatDateTime } from '@/utils/formatters';
+import { colors, font, radius } from '@/theme/theme';
+import { IconTile } from '@/components/ui';
 
-const DIR_META: Record<Call['direction'], { label: string; color: string; icon: string }> = {
-  incoming: { label: 'Incoming', color: '#27ae60', icon: '↙' },
-  outgoing: { label: 'Outgoing', color: '#2980b9', icon: '↗' },
-  missed: { label: 'Missed', color: '#c0392b', icon: '✕' },
-  rejected: { label: 'Rejected', color: '#7f8c8d', icon: '⊘' },
+const DIR_META: Record<
+  Call['direction'],
+  { label: string; color: string; glyph: string; tile: string }
+> = {
+  incoming: { label: 'Incoming', color: colors.success, glyph: '↙', tile: colors.successSoft },
+  outgoing: { label: 'Outgoing', color: colors.primary, glyph: '↗', tile: colors.tileIndigo },
+  missed: { label: 'Missed', color: colors.danger, glyph: '✕', tile: colors.dangerSoft },
+  rejected: { label: 'Rejected', color: colors.textMuted, glyph: '⊘', tile: colors.cardAlt },
 };
 
 function formatDuration(sec: number): string {
-  if (sec <= 0) return '—';
+  if (sec <= 0) return '';
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
-/** Dumb: one call row. Tappable when an onPress handler is provided. */
+/** Call list item: direction tile, contact, meta, optional AI-recap callout. */
 export function CallCard({ call, onPress }: { call: Call; onPress?: () => void }) {
   const meta = DIR_META[call.direction];
-  const body = (
-    <>
-      <Text style={[styles.icon, { color: meta.color }]}>{meta.icon}</Text>
-      <View style={styles.mid}>
-        <Text style={styles.name} numberOfLines={1}>
-          {call.contactName ?? call.phoneNumber}
-        </Text>
-        <Text style={styles.sub}>
-          {meta.label} · {formatDateTime(call.occurredAt)}
-          {call.recordingUrl ? ' · 🎙' : ''}
-          {call.summary ? ' · 📝' : ''}
-        </Text>
-      </View>
-      <Text style={styles.duration}>{formatDuration(call.durationSec)}</Text>
-    </>
-  );
+  const Wrapper: React.ElementType = onPress ? TouchableOpacity : View;
 
-  if (onPress) {
-    return (
-      <TouchableOpacity style={styles.card} onPress={onPress}>
-        {body}
-      </TouchableOpacity>
-    );
-  }
-  return <View style={styles.card}>{body}</View>;
+  return (
+    <Wrapper style={styles.card} onPress={onPress}>
+      <View style={styles.row}>
+        <IconTile glyph={meta.glyph} bg={meta.tile} size={42} />
+        <View style={styles.mid}>
+          <Text style={styles.name} numberOfLines={1}>
+            {call.contactName ?? call.phoneNumber}
+          </Text>
+          <Text style={styles.sub}>
+            {meta.label} · {formatDateTime(call.occurredAt)}
+            {formatDuration(call.durationSec) ? ` · ${formatDuration(call.durationSec)}` : ''}
+          </Text>
+        </View>
+        {call.direction === 'missed' && (
+          <TouchableOpacity
+            style={styles.callBack}
+            onPress={() => Linking.openURL(`tel:${call.phoneNumber}`)}>
+            <Text style={styles.callBackText}>Call Back</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {call.summary ? (
+        <View style={styles.recap}>
+          <Text style={styles.recapLabel}>✨ AI RECAP</Text>
+          <Text style={styles.recapText} numberOfLines={3}>
+            {call.summary}
+          </Text>
+        </View>
+      ) : null}
+    </Wrapper>
+  );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e0e0e0',
-    gap: 12,
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: 14,
+    marginBottom: 10,
   },
-  icon: { fontSize: 20, width: 24, textAlign: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   mid: { flex: 1 },
-  name: { fontSize: 16, fontWeight: '600', color: '#111' },
-  sub: { fontSize: 13, color: '#777', marginTop: 2 },
-  duration: { fontSize: 14, color: '#555' },
+  name: { fontSize: font.size.md, fontWeight: '600', color: colors.text },
+  sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
+  callBack: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  callBackText: { color: colors.primary, fontWeight: '700', fontSize: font.size.sm },
+  recap: {
+    marginTop: 10,
+    backgroundColor: colors.successSoft,
+    borderRadius: radius.md,
+    padding: 12,
+  },
+  recapLabel: { fontSize: font.size.xs, fontWeight: '700', color: colors.success, marginBottom: 4 },
+  recapText: { fontSize: font.size.sm, color: '#216A43', lineHeight: 19 },
 });

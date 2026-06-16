@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { Call } from '@yes-boss/shared';
 import { CallsScreen } from '@/screens/CallsScreen';
 import { CallDetailScreen } from '@/screens/CallDetailScreen';
+import { colors } from '@/theme/theme';
 
 export type CallsStackParamList = {
   CallsList: undefined;
@@ -23,7 +24,13 @@ export function CallsStack() {
       <Stack.Screen
         name="CallDetail"
         component={CallDetailScreen}
-        options={{ title: 'Call' }}
+        options={{
+          title: 'Call',
+          headerStyle: { backgroundColor: colors.bg },
+          headerShadowVisible: false,
+          headerTintColor: colors.primary,
+          headerTitleStyle: { color: colors.text },
+        }}
       />
     </Stack.Navigator>
   );

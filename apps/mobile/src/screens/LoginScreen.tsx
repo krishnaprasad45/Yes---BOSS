@@ -1,12 +1,10 @@
 import React from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
@@ -14,6 +12,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '@/hooks/useAuth';
 import { loginSchema, type LoginFormValues } from '@/schema/login.schema';
+import { colors, font, radius, spacing } from '@/theme/theme';
+import { Card, IconTile, PrimaryButton } from '@/components/ui';
 
 export function LoginScreen() {
   const { login } = useAuth();
@@ -41,72 +41,75 @@ export function LoginScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Text style={styles.title}>Yes Boss</Text>
-      <Text style={styles.subtitle}>Personal assistant</Text>
+      <View style={styles.brand}>
+        <IconTile glyph="🤖" bg={colors.primarySoft} size={64} />
+        <Text style={styles.title}>Yes Boss</Text>
+        <Text style={styles.subtitle}>Your personal assistant</Text>
+      </View>
 
-      <Controller
-        control={control}
-        name="email"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-          />
-        )}
-      />
-      {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
+      <Card style={styles.card}>
+        <Text style={styles.label}>Email</Text>
+        <Controller
+          control={control}
+          name="email"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="you@example.com"
+              placeholderTextColor={colors.textFaint}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+            />
+          )}
+        />
+        {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
 
-      <Controller
-        control={control}
-        name="password"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            secureTextEntry
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-          />
-        )}
-      />
-      {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
+        <Text style={styles.label}>Password</Text>
+        <Controller
+          control={control}
+          name="password"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="••••••••"
+              placeholderTextColor={colors.textFaint}
+              secureTextEntry
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+            />
+          )}
+        />
+        {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
 
-      <TouchableOpacity style={styles.button} onPress={onSubmit} disabled={isSubmitting}>
-        {isSubmitting ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Log in</Text>
-        )}
-      </TouchableOpacity>
+        <PrimaryButton
+          title="Log in"
+          onPress={onSubmit}
+          loading={isSubmitting}
+          style={{ marginTop: spacing.md }}
+        />
+      </Card>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24, gap: 12 },
-  title: { fontSize: 32, fontWeight: '700', textAlign: 'center' },
-  subtitle: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 24 },
+  container: { flex: 1, justifyContent: 'center', padding: spacing.xl, backgroundColor: colors.bg },
+  brand: { alignItems: 'center', marginBottom: spacing.xxl, gap: spacing.sm },
+  title: { fontSize: font.size.display, fontWeight: '700', color: colors.text, marginTop: spacing.sm },
+  subtitle: { fontSize: font.size.md, color: colors.textMuted },
+  card: { gap: spacing.sm },
+  label: { fontSize: font.size.sm, fontWeight: '600', color: colors.text, marginTop: spacing.sm },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
+    backgroundColor: colors.cardAlt,
+    borderRadius: radius.md,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
+    paddingVertical: 13,
+    fontSize: font.size.md,
+    color: colors.text,
   },
-  error: { color: '#c00', fontSize: 13 },
-  button: {
-    backgroundColor: '#111',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  error: { color: colors.danger, fontSize: font.size.sm, marginTop: 2 },
 });

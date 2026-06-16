@@ -9,9 +9,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAutoReply } from '@/hooks/useAutoReply';
+import { colors, font, radius, spacing } from '@/theme/theme';
+import { Badge, Card, IconTile, PrimaryButton, SectionHeader } from '@/components/ui';
 
-/** Missed-call auto-reply settings (Phase 3). */
+/** Assistant settings — missed-call auto-reply (Phase 3). */
 export function SettingsScreen() {
   const { config, isLoading, save, isSaving } = useAutoReply();
 
@@ -20,7 +23,6 @@ export function SettingsScreen() {
   const [signature, setSignature] = useState('');
   const [cooldown, setCooldown] = useState('60');
 
-  // Seed local form from the server config once it loads.
   useEffect(() => {
     if (!config) return;
     setEnabled(config.enabled);
@@ -30,7 +32,11 @@ export function SettingsScreen() {
   }, [config]);
 
   if (isLoading) {
-    return <ActivityIndicator style={styles.center} size="large" />;
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ActivityIndicator style={{ marginTop: 48 }} size="large" color={colors.primary} />
+      </SafeAreaView>
+    );
   }
 
   const onSave = () => {
@@ -44,91 +50,141 @@ export function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Auto-reply</Text>
-      <Text style={styles.subtitle}>
-        Text missed callers automatically when you can't pick up.
-      </Text>
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Assistant Settings</Text>
 
-      <View style={styles.rowBetween}>
-        <Text style={styles.label}>Enabled</Text>
-        <Switch value={enabled} onValueChange={setEnabled} />
-      </View>
+        {/* Auto-Reply card */}
+        <Card style={styles.card}>
+          <View style={styles.cardHead}>
+            <View style={styles.headLeft}>
+              <IconTile glyph="✨" bg={colors.tileIndigo} size={40} />
+              <View>
+                <Text style={styles.cardTitle}>Auto-Reply</Text>
+                <Text style={styles.cardSub}>AI responses to missed calls</Text>
+              </View>
+            </View>
+            <Switch
+              value={enabled}
+              onValueChange={setEnabled}
+              trackColor={{ true: colors.primary, false: '#D9DBE6' }}
+              thumbColor="#fff"
+            />
+          </View>
 
-      <Text style={styles.label}>Message</Text>
-      <TextInput
-        style={[styles.input, styles.multiline]}
-        value={message}
-        onChangeText={setMessage}
-        multiline
-        placeholder="Sorry, I missed your call…"
-      />
+          <Text style={styles.label}>Custom response message</Text>
+          <TextInput
+            style={[styles.input, styles.multiline]}
+            value={message}
+            onChangeText={setMessage}
+            multiline
+            placeholder="Sorry, I missed your call…"
+            placeholderTextColor={colors.textFaint}
+          />
 
-      <Text style={styles.label}>Signature</Text>
-      <TextInput
-        style={styles.input}
-        value={signature}
-        onChangeText={setSignature}
-        placeholder="— AI Assistant"
-      />
+          <Text style={styles.label}>Signature</Text>
+          <TextInput
+            style={styles.input}
+            value={signature}
+            onChangeText={setSignature}
+            placeholder="— AI Assistant"
+            placeholderTextColor={colors.textFaint}
+          />
 
-      <Text style={styles.label}>Cooldown (minutes)</Text>
-      <TextInput
-        style={styles.input}
-        value={cooldown}
-        onChangeText={setCooldown}
-        keyboardType="number-pad"
-        placeholder="60"
-      />
-      <Text style={styles.hint}>
-        Won't text the same number again within this window.
-      </Text>
+          <Text style={styles.label}>Cooldown (minutes)</Text>
+          <TextInput
+            style={styles.input}
+            value={cooldown}
+            onChangeText={setCooldown}
+            keyboardType="number-pad"
+            placeholder="60"
+            placeholderTextColor={colors.textFaint}
+          />
+          <Text style={styles.hint}>Won't text the same number again within this window.</Text>
+        </Card>
 
-      <TouchableOpacity
-        style={[styles.saveBtn, isSaving && styles.saveBtnDisabled]}
-        disabled={isSaving}
-        onPress={onSave}>
-        {isSaving ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.saveBtnText}>Save</Text>
-        )}
-      </TouchableOpacity>
-    </ScrollView>
+        {/* Recap delivery — reflects backend default (self-recap). */}
+        <Card style={styles.card}>
+          <SectionHeader title="Recap delivery" />
+          <Text style={styles.cardSub}>Who receives the post-call summary.</Text>
+          <View style={[styles.choice, styles.choiceActive]}>
+            <Text style={styles.choiceTextActive}>Self-recap only</Text>
+            <Text style={styles.radioOn}>●</Text>
+          </View>
+          <View style={styles.choice}>
+            <Text style={styles.choiceText}>Share with contact</Text>
+            <Text style={styles.radioOff}>○</Text>
+          </View>
+          <Text style={styles.hint}>Contact sharing & channels arrive in a later update.</Text>
+        </Card>
+
+        {/* Active channels (status only for now). */}
+        <Card style={styles.card}>
+          <SectionHeader title="Active channels" />
+          <View style={styles.channel}>
+            <View style={styles.headLeft}>
+              <IconTile glyph="💬" bg={colors.tileGreen} size={36} />
+              <Text style={styles.channelName}>WhatsApp</Text>
+            </View>
+            <Badge label="Soon" tone="neutral" />
+          </View>
+          <View style={styles.channel}>
+            <View style={styles.headLeft}>
+              <IconTile glyph="✉️" bg={colors.tileIndigo} size={36} />
+              <Text style={styles.channelName}>Email</Text>
+            </View>
+            <Badge label="Soon" tone="neutral" />
+          </View>
+        </Card>
+
+        <PrimaryButton title="Save" onPress={onSave} loading={isSaving} style={{ marginTop: spacing.xs }} />
+        <Text style={styles.footer}>🔒 Your data is encrypted in transit.</Text>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#fff' },
-  center: { flex: 1 },
-  content: { padding: 16, gap: 10 },
-  title: { fontSize: 28, fontWeight: '700' },
-  subtitle: { fontSize: 14, color: '#777', marginBottom: 8 },
-  rowBetween: {
+  safe: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.lg },
+  title: { fontSize: font.size.xxl, fontWeight: '700', color: colors.text },
+  card: { gap: spacing.sm },
+  cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  cardTitle: { fontSize: font.size.lg, fontWeight: '700', color: colors.text },
+  cardSub: { fontSize: font.size.sm, color: colors.textMuted },
+  label: { fontSize: font.size.sm, fontWeight: '600', color: colors.text, marginTop: spacing.sm },
+  input: {
+    backgroundColor: colors.cardAlt,
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: font.size.md,
+    color: colors.text,
+  },
+  multiline: { minHeight: 80, textAlignVertical: 'top' },
+  hint: { fontSize: font.size.xs, color: colors.textFaint, marginTop: 2 },
+  choice: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-  label: { fontSize: 15, fontWeight: '600', color: '#333', marginTop: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: '#111',
-  },
-  multiline: { minHeight: 80, textAlignVertical: 'top' },
-  hint: { fontSize: 12, color: '#999' },
-  saveBtn: {
-    backgroundColor: '#111',
-    borderRadius: 12,
+    backgroundColor: colors.cardAlt,
+    borderRadius: radius.md,
+    paddingHorizontal: 16,
     paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 20,
+    marginTop: 4,
   },
-  saveBtnDisabled: { opacity: 0.5 },
-  saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  choiceActive: { backgroundColor: colors.primary },
+  choiceText: { fontSize: font.size.md, color: colors.text, fontWeight: '600' },
+  choiceTextActive: { fontSize: font.size.md, color: '#fff', fontWeight: '700' },
+  radioOn: { color: '#fff', fontSize: 14 },
+  radioOff: { color: colors.textFaint, fontSize: 14 },
+  channel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  channelName: { fontSize: font.size.md, fontWeight: '600', color: colors.text },
+  footer: { textAlign: 'center', fontSize: font.size.xs, color: colors.textFaint, marginTop: spacing.sm },
 });

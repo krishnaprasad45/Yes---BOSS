@@ -5,18 +5,20 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Call, CallDirection } from '@yes-boss/shared';
 import type { CallsStackParamList } from '@/navigation/CallsStack';
 import { useCallList } from '@/hooks/useCalls';
 import { useCallBackup } from '@/hooks/useCallBackup';
 import { CallCard } from '@/components/feature/CallCard';
+import { colors, font, spacing } from '@/theme/theme';
+import { Chip, PrimaryButton, SearchBar } from '@/components/ui';
 
 const FILTERS: { key: CallDirection | 'all'; label: string }[] = [
-  { key: 'all', label: 'All' },
+  { key: 'all', label: 'All Calls' },
   { key: 'incoming', label: 'In' },
   { key: 'outgoing', label: 'Out' },
   { key: 'missed', label: 'Missed' },
@@ -24,12 +26,17 @@ const FILTERS: { key: CallDirection | 'all'; label: string }[] = [
 
 type Props = NativeStackScreenProps<CallsStackParamList, 'CallsList'>;
 
-/** Smart container: direction filter + call backup trigger. */
+/** Call logs — search, direction filter, backup, recap-aware list. */
 export function CallsScreen({ navigation }: Props) {
   const [dirFilter, setDirFilter] = useState<CallDirection | 'all'>('all');
+  const [search, setSearch] = useState('');
+
   const filters = useMemo(
-    () => ({ direction: dirFilter === 'all' ? undefined : dirFilter }),
-    [dirFilter],
+    () => ({
+      direction: dirFilter === 'all' ? undefined : dirFilter,
+      search: search.trim() || undefined,
+    }),
+    [dirFilter, search],
   );
 
   const { backup, isBackingUp } = useCallBackup();
@@ -39,92 +46,62 @@ export function CallsScreen({ navigation }: Props) {
   const calls: Call[] = data?.pages.flatMap(p => p.data) ?? [];
 
   return (
-    <FlatList
-      style={styles.list}
-      data={calls}
-      keyExtractor={c => c.id}
-      renderItem={({ item }) => (
-        <CallCard
-          call={item}
-          onPress={() => navigation.navigate('CallDetail', { call: item })}
-        />
-      )}
-      onEndReached={() => hasNextPage && fetchNextPage()}
-      onEndReachedThreshold={0.5}
-      refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-      }
-      ListHeaderComponent={
-        <View>
-          <View style={styles.header}>
-            <Text style={styles.title}>Calls</Text>
-            <TouchableOpacity
-              style={[styles.syncBtn, isBackingUp && styles.syncBtnDisabled]}
-              disabled={isBackingUp}
-              onPress={backup}>
-              {isBackingUp ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.syncBtnText}>Back up</Text>
-              )}
-            </TouchableOpacity>
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <FlatList
+        contentContainerStyle={styles.content}
+        data={calls}
+        keyExtractor={c => c.id}
+        renderItem={({ item }) => (
+          <CallCard
+            call={item}
+            onPress={() => navigation.navigate('CallDetail', { call: item })}
+          />
+        )}
+        onEndReached={() => hasNextPage && fetchNextPage()}
+        onEndReachedThreshold={0.5}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+        ListHeaderComponent={
+          <View style={{ gap: spacing.md }}>
+            <Text style={styles.title}>Call Logs</Text>
+            <SearchBar
+              glyph="🔍"
+              placeholder="Search your calls"
+              value={search}
+              onChangeText={setSearch}
+            />
+            <View style={styles.filterRow}>
+              {FILTERS.map(f => (
+                <Chip
+                  key={f.key}
+                  label={f.label}
+                  active={dirFilter === f.key}
+                  onPress={() => setDirFilter(f.key)}
+                />
+              ))}
+            </View>
+            <PrimaryButton title="Back up call log" onPress={backup} loading={isBackingUp} />
+            <Text style={styles.recentLabel}>Recent</Text>
           </View>
-          <View style={styles.filterRow}>
-            {FILTERS.map(f => (
-              <TouchableOpacity
-                key={f.key}
-                style={[styles.chip, dirFilter === f.key && styles.chipActive]}
-                onPress={() => setDirFilter(f.key)}>
-                <Text style={[styles.chipText, dirFilter === f.key && styles.chipTextActive]}>
-                  {f.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      }
-      ListEmptyComponent={
-        isLoading ? (
-          <ActivityIndicator style={styles.empty} size="large" />
-        ) : (
-          <Text style={styles.empty}>
-            {error ? error.message : 'No calls yet. Tap "Back up" to sync your call log.'}
-          </Text>
-        )
-      }
-    />
+        }
+        ListEmptyComponent={
+          isLoading ? (
+            <ActivityIndicator style={styles.empty} size="large" color={colors.primary} />
+          ) : (
+            <Text style={styles.empty}>
+              {error ? error.message : 'No calls yet. Tap "Back up" to sync your call log.'}
+            </Text>
+          )
+        }
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  list: { flex: 1, backgroundColor: '#fff' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  title: { fontSize: 28, fontWeight: '700' },
-  syncBtn: {
-    backgroundColor: '#111',
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 20,
-    minWidth: 88,
-    alignItems: 'center',
-  },
-  syncBtnDisabled: { opacity: 0.5 },
-  syncBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
-  filterRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 8 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-  },
-  chipActive: { backgroundColor: '#111' },
-  chipText: { fontSize: 14, color: '#555' },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
-  empty: { textAlign: 'center', color: '#888', marginTop: 48, paddingHorizontal: 32 },
+  safe: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  title: { fontSize: font.size.xxl, fontWeight: '700', color: colors.text },
+  filterRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+  recentLabel: { fontSize: font.size.sm, fontWeight: '700', color: colors.textMuted, marginTop: 4 },
+  empty: { textAlign: 'center', color: colors.textMuted, marginTop: 40, paddingHorizontal: 32 },
 });
