@@ -75,3 +75,28 @@ model SmsTxn {
   @@index([receivedAt])
   @@index([type])
 }
+
+model MediaAsset {
+  id             String   @id @default(uuid())
+  type           String // photo | video
+  storageKey     String // object key in the media bucket
+  sourceFileName String
+  sizeBytes      Int      @default(0)
+  capturedAt     DateTime
+  dedupeKey      String   @unique // stable per device file, dedupes re-syncs
+  createdAt      DateTime @default(now())
+
+  @@index([capturedAt])
+  @@index([type])
+}
+
+model LocationPoint {
+  id        String   @id @default(uuid())
+  lat       Float
+  lng       Float
+  recordedAt DateTime
+  dedupeKey String   @unique // device-stable, dedupes re-synced points
+  createdAt DateTime @default(now())
+
+  @@index([recordedAt])
+}
