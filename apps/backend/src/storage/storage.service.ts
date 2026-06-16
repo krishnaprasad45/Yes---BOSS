@@ -50,4 +50,14 @@ export class StorageService implements OnModuleInit {
   async getSignedUrl(key: string, expirySec = 3600): Promise<string> {
     return this.client.presignedGetObject(this.bucket, key, expirySec);
   }
+
+  /** Pull an object's bytes into memory (used by the recap pipeline). */
+  async getObject(key: string): Promise<Buffer> {
+    const stream = await this.client.getObject(this.bucket, key);
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) {
+      chunks.push(chunk as Buffer);
+    }
+    return Buffer.concat(chunks);
+  }
 }
