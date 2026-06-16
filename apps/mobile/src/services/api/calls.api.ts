@@ -33,6 +33,26 @@ export async function listCalls(params: CallListParams): Promise<Paginated<Call>
   return apiFetch<Paginated<Call>>(`${BASE}${qs ? `?${qs}` : ''}`);
 }
 
+export interface RecapStatus {
+  transcription: boolean;
+  summary: boolean;
+}
+
+export async function getRecapStatus(): Promise<ItemResponse<RecapStatus>> {
+  return apiFetch<ItemResponse<RecapStatus>>(`${BASE}/recap/status`);
+}
+
+/** Generate (or regenerate) the transcript + summary for one call. */
+export async function generateRecap(
+  callId: string,
+  force = false,
+): Promise<ItemResponse<Call>> {
+  return apiFetch<ItemResponse<Call>>(
+    `${BASE}/${callId}/recap${force ? '?force=true' : ''}`,
+    { method: 'POST' },
+  );
+}
+
 export async function syncCalls(
   items: CallSyncItem[],
 ): Promise<ItemResponse<{ inserted: number; skipped: number }>> {

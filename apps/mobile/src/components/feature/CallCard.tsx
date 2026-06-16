@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { Call } from '@yes-boss/shared';
 import { formatDateTime } from '@/utils/formatters';
 
@@ -17,11 +17,11 @@ function formatDuration(sec: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
-/** Dumb: one call row. */
-export function CallCard({ call }: { call: Call }) {
+/** Dumb: one call row. Tappable when an onPress handler is provided. */
+export function CallCard({ call, onPress }: { call: Call; onPress?: () => void }) {
   const meta = DIR_META[call.direction];
-  return (
-    <View style={styles.card}>
+  const body = (
+    <>
       <Text style={[styles.icon, { color: meta.color }]}>{meta.icon}</Text>
       <View style={styles.mid}>
         <Text style={styles.name} numberOfLines={1}>
@@ -30,11 +30,21 @@ export function CallCard({ call }: { call: Call }) {
         <Text style={styles.sub}>
           {meta.label} · {formatDateTime(call.occurredAt)}
           {call.recordingUrl ? ' · 🎙' : ''}
+          {call.summary ? ' · 📝' : ''}
         </Text>
       </View>
       <Text style={styles.duration}>{formatDuration(call.durationSec)}</Text>
-    </View>
+    </>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity style={styles.card} onPress={onPress}>
+        {body}
+      </TouchableOpacity>
+    );
+  }
+  return <View style={styles.card}>{body}</View>;
 }
 
 const styles = StyleSheet.create({

@@ -158,7 +158,7 @@ After a completed call **with a saved contact**, generate a recap:
 
 ## 6. Phased Roadmap
 
-**Overall progress: ~48%** (Phase 0 done; Phases 1–3 ~85%, device-verify pending)
+**Overall progress: ~58%** (Phase 0 done; Phases 1–4 ~80–85%, device/API-key verify pending)
 
 | Phase | Status | % |
 |---|---|---|
@@ -166,7 +166,7 @@ After a completed call **with a saved contact**, generate a recap:
 | Phase 1 — SMS analytics | 🟡 In progress | 85% |
 | Phase 2 — Call backup | 🟡 In progress | 85% |
 | Phase 3 — Missed-call auto-reply | 🟡 In progress | 85% |
-| Phase 4 — Post-call recap | ⬜ Not started | 0% |
+| Phase 4 — Post-call recap | 🟡 In progress | 80% |
 | Phase 5 — Analytics & stats | ⬜ Not started | 0% |
 | Phase 6 — iOS client | ⬜ Not started | 0% |
 | Phase 7 — Upcoming features | ⬜ Not started | 0% |
@@ -230,10 +230,19 @@ After a completed call **with a saved contact**, generate a recap:
 - [ ] **Device verify**: enable, miss a call, confirm the caller gets the
       auto-SMS and the cooldown suppresses repeats.
 
-### Phase 4 — Post-call recap (Android) ⬜ 0%
-- Whisper transcription + LLM summary pipeline on backend.
-- Self-recap delivery (default); opt-in recap-to-contact.
-- WhatsApp/email delivery channel.
+### Phase 4 — Post-call recap (Android) 🟡 80%
+- [x] Backend RecapModule: pull recording from storage → Whisper transcription
+      (ASR) → Claude summary (`claude-opus-4-8`) → persist transcript + summary
+      on the Call. Idempotent (`?force=true` to redo). Both providers degrade
+      gracefully when unconfigured.
+- [x] GET /calls/recap/status, POST /calls/:id/recap. **Verified wiring**
+      (status off, clean 400 without keys, 404, 401).
+- [x] Mobile: recap API + hooks, Calls stack (list → CallDetail), detail screen
+      shows summary/transcript + Generate/Regenerate recap (gated on provider
+      status). Cards show 🎙/📝 badges.
+- [ ] **Live verify**: set `ANTHROPIC_API_KEY` + `WHISPER_API_KEY`, run a real
+      recording through transcription + summary end-to-end.
+- [ ] Self-recap / recap-to-contact delivery via WhatsApp/email (deferred).
 
 ### Phase 5 — Analytics & stats ⬜ 0%
 - Usage time, spending patterns, daily digest.

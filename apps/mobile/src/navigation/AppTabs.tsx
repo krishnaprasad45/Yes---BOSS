@@ -3,7 +3,7 @@ import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { HomeScreen } from '@/screens/HomeScreen';
 import { SpendingScreen } from '@/screens/SpendingScreen';
-import { CallsScreen } from '@/screens/CallsScreen';
+import { CallsStack } from '@/navigation/CallsStack';
 import { SettingsScreen } from '@/screens/SettingsScreen';
 
 export type AppTabsParamList = {
@@ -42,7 +42,7 @@ export function AppTabs() {
       />
       <Tab.Screen
         name="Calls"
-        component={CallsScreen}
+        component={CallsStack}
         options={{ tabBarIcon: tabIcon('📞') }}
       />
       <Tab.Screen

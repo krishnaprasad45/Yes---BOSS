@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Call, CallDirection } from '@yes-boss/shared';
+import type { CallsStackParamList } from '@/navigation/CallsStack';
 import { useCallList } from '@/hooks/useCalls';
 import { useCallBackup } from '@/hooks/useCallBackup';
 import { CallCard } from '@/components/feature/CallCard';
@@ -20,8 +22,10 @@ const FILTERS: { key: CallDirection | 'all'; label: string }[] = [
   { key: 'missed', label: 'Missed' },
 ];
 
+type Props = NativeStackScreenProps<CallsStackParamList, 'CallsList'>;
+
 /** Smart container: direction filter + call backup trigger. */
-export function CallsScreen() {
+export function CallsScreen({ navigation }: Props) {
   const [dirFilter, setDirFilter] = useState<CallDirection | 'all'>('all');
   const filters = useMemo(
     () => ({ direction: dirFilter === 'all' ? undefined : dirFilter }),
@@ -39,7 +43,12 @@ export function CallsScreen() {
       style={styles.list}
       data={calls}
       keyExtractor={c => c.id}
-      renderItem={({ item }) => <CallCard call={item} />}
+      renderItem={({ item }) => (
+        <CallCard
+          call={item}
+          onPress={() => navigation.navigate('CallDetail', { call: item })}
+        />
+      )}
       onEndReached={() => hasNextPage && fetchNextPage()}
       onEndReachedThreshold={0.5}
       refreshControl={
