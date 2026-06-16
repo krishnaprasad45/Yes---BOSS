@@ -158,7 +158,7 @@ After a completed call **with a saved contact**, generate a recap:
 
 ## 6. Phased Roadmap
 
-**Overall progress: ~67%** (Phase 0 done; Phases 1–5 ~80–90%, device/API-key verify pending)
+**Overall progress: ~72%** (Phase 0 done; Phases 1–5 & 7 built, Phase 6 blocked on macOS; device/API-key verify pending)
 
 | Phase | Status | % |
 |---|---|---|
@@ -168,8 +168,8 @@ After a completed call **with a saved contact**, generate a recap:
 | Phase 3 — Missed-call auto-reply | 🟡 In progress | 85% |
 | Phase 4 — Post-call recap | 🟡 In progress | 80% |
 | Phase 5 — Analytics & stats | 🟡 In progress | 90% |
-| Phase 6 — iOS client | ⬜ Not started | 0% |
-| Phase 7 — Upcoming features | ⬜ Not started | 0% |
+| Phase 6 — iOS client | 🟠 Blocked (needs macOS) | 30% |
+| Phase 7 — Upcoming features | 🟡 In progress | 70% |
 
 ### Phase 0 — Scaffold ✅ 100%
 - [x] Monorepo (yarn workspaces), folder structure, shared types package.
@@ -254,12 +254,25 @@ After a completed call **with a saved contact**, generate a recap:
 - [ ] **Device verify**: confirm the dashboard renders live aggregates on the
       phone. (Daily digest day-boundary is UTC — revisit for IST if needed.)
 
-### Phase 6 — iOS client ⬜ 0%
-- Build iOS as a view/dashboard client over the shared backend.
-- iOS-capable capture only: photo/video backup, location/KM.
+### Phase 6 — iOS client 🟠 30% (blocked on macOS)
+- [x] App is cross-platform RN; every Android-only native module
+      (SMS reader, call-log/recordings, auto-reply) is guarded by
+      `Platform.OS === 'android'`, so on iOS the app runs as a view/dashboard
+      client over the shared backend — login, dashboard, spending list, calls
+      list, settings all work; capture/sync actions degrade to "needs the
+      Android app". This is exactly Phase 6's stated intent.
+- [ ] **Blocked**: building/running the iOS target needs macOS + Xcode (not
+      available on this Windows box). iOS-only capture (photo/video backup,
+      location/KM) needs new iOS native modules + a Mac to build/verify.
+      Backend for those features can be added here ahead of the iOS UI.
 
-### Phase 7 — Upcoming features ⬜ 0%
-- File search, KM traveled, peak usage, subscription detector, etc.
+### Phase 7 — Upcoming features 🟡 70%
+- [x] Subscription detector: infers recurring subscriptions from debit SMS
+      (merchant + median amount + cadence). Backend + dashboard. **Verified.**
+- [x] Peak usage: call volume by hour of day; busiest hour on the dashboard.
+      **Verified.**
+- [ ] File search, KM traveled (depends on Phase 6 location capture), and
+      other "nice to have" detectors — not yet built.
 
 ---
 

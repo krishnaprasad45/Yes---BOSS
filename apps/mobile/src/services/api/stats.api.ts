@@ -1,4 +1,10 @@
-import type { DailyDigest, DashboardStats, ItemResponse } from '@yes-boss/shared';
+import type {
+  DailyDigest,
+  DashboardStats,
+  ItemResponse,
+  PeakUsageBucket,
+  Subscription,
+} from '@yes-boss/shared';
 import { apiFetch } from './client';
 
 const BASE = '/api/v1/stats';
@@ -20,4 +26,12 @@ export async function getDailyDigest(date?: string): Promise<ItemResponse<DailyD
   return apiFetch<ItemResponse<DailyDigest>>(
     `${BASE}/digest${date ? `?date=${encodeURIComponent(date)}` : ''}`,
   );
+}
+
+export async function getSubscriptions(): Promise<ItemResponse<Subscription[]>> {
+  return apiFetch<ItemResponse<Subscription[]>>(`${BASE}/subscriptions`);
+}
+
+export async function getPeakUsage(): Promise<ItemResponse<PeakUsageBucket[]>> {
+  return apiFetch<ItemResponse<PeakUsageBucket[]>>(`${BASE}/peak-usage`);
 }

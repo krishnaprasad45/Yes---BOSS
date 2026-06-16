@@ -9,7 +9,12 @@ import {
   View,
 } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
-import { useDailyDigest, useDashboardStats } from '@/hooks/useDashboard';
+import {
+  useDailyDigest,
+  useDashboardStats,
+  usePeakUsage,
+  useSubscriptions,
+} from '@/hooks/useDashboard';
 import { formatMinor } from '@/utils/formatters';
 
 function formatTalk(sec: number): string {
@@ -19,20 +24,36 @@ function formatTalk(sec: number): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+function formatHour(h: number): string {
+  const period = h < 12 ? 'am' : 'pm';
+  const display = h % 12 === 0 ? 12 : h % 12;
+  return `${display}${period}`;
+}
+
 /** Analytics dashboard: today's digest + last-30-day call & spending stats. */
 export function HomeScreen() {
   const { logout } = useAuth();
   const overview = useDashboardStats();
   const digest = useDailyDigest();
+  const subs = useSubscriptions();
+  const peak = usePeakUsage();
 
   const refreshing = overview.isRefetching || digest.isRefetching;
   const onRefresh = () => {
     overview.refetch();
     digest.refetch();
+    subs.refetch();
+    peak.refetch();
   };
 
   const stats = overview.data?.data;
   const day = digest.data?.data;
+  const subscriptions = subs.data?.data ?? [];
+  const buckets = peak.data?.data ?? [];
+  const busiest = buckets.reduce(
+    (best, b) => (b.count > best.count ? b : best),
+    { hour: -1, count: 0 },
+  );
 
   return (
     <ScrollView
@@ -96,6 +117,31 @@ export function HomeScreen() {
         </>
       )}
 
+      {subscriptions.length > 0 && (
+        <Section title="Subscriptions detected">
+          <View style={styles.block}>
+            {subscriptions.map(s => (
+              <View key={s.merchant} style={styles.listRow}>
+                <Text style={styles.listName}>
+                  {s.merchant}
+                  <Text style={styles.subMeta}>  · every {s.cadenceDays}d</Text>
+                </Text>
+                <Text style={styles.listVal}>{formatMinor(s.amountMinor)}</Text>
+              </View>
+            ))}
+          </View>
+        </Section>
+      )}
+
+      {busiest.hour >= 0 && (
+        <Section title="Call activity">
+          <View style={styles.row}>
+            <Stat label="Busiest hour" value={formatHour(busiest.hour)} />
+            <Stat label="Calls then" value={String(busiest.count)} />
+          </View>
+        </Section>
+      )}
+
       <TouchableOpacity style={[styles.btn, styles.secondary]} onPress={logout}>
         <Text style={styles.btnText}>Log out</Text>
       </TouchableOpacity>
@@ -138,6 +184,7 @@ const styles = StyleSheet.create({
   blockTitle: { fontSize: 13, fontWeight: '600', color: '#444', marginBottom: 8 },
   listRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
   listName: { fontSize: 15, color: '#333' },
+  subMeta: { fontSize: 13, color: '#999' },
   listVal: { fontSize: 15, fontWeight: '600', color: '#111' },
   btn: {
     backgroundColor: '#111',
