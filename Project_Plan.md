@@ -158,13 +158,13 @@ After a completed call **with a saved contact**, generate a recap:
 
 ## 6. Phased Roadmap
 
-**Overall progress: ~26%** (1 of 7 phases complete, Phase 1 ~85%)
+**Overall progress: ~37%** (Phase 0 done; Phases 1 & 2 ~85%, device-verify pending)
 
 | Phase | Status | % |
 |---|---|---|
 | Phase 0 — Scaffold | ✅ Complete | 100% |
 | Phase 1 — SMS analytics | 🟡 In progress | 85% |
-| Phase 2 — Call backup | ⬜ Not started | 0% |
+| Phase 2 — Call backup | 🟡 In progress | 85% |
 | Phase 3 — Missed-call auto-reply | ⬜ Not started | 0% |
 | Phase 4 — Post-call recap | ⬜ Not started | 0% |
 | Phase 5 — Analytics & stats | ⬜ Not started | 0% |
@@ -197,13 +197,25 @@ After a completed call **with a saved contact**, generate a recap:
       scroll, pull-to-refresh), bottom-tab nav.
 - [x] Native Android SMS-read module (Kotlin: `READ_SMS` + inbox query) with
       JS bridge, runtime-permission flow, and a "Sync SMS" action.
+- [x] Backend SMS module verified end-to-end (sync/dedupe/list/summary).
 - [ ] **Device verify**: build/install release, grant READ_SMS, scan inbox,
       confirm real transactions land in the Spending screen.
 - Proves the full pipeline: device → backend → DB → dashboard.
 
-### Phase 2 — Call backup (Feature 1) ⬜ 0%
-- FileObserver folder-sync, call-log matching, contact name resolution, upload.
-- Calls made/received dashboard.
+### Phase 2 — Call backup (Feature 1) 🟡 85%
+- [x] Backend StorageService (MinIO/S3): bucket auto-create, object put,
+      short-lived presigned GET URLs.
+- [x] Backend CallModule: log sync (dedupe by phone+time), multipart
+      recording upload (upsert + attach object), paginated list with
+      presigned recordingUrl. **Verified end-to-end via curl/node.**
+- [x] Native Android modules (Kotlin): CallLogReader (uses CACHED_NAME so no
+      contacts permission) + RecordingsReader (MediaStore audio in Call/
+      Recordings folders, returns content:// uri for direct upload).
+- [x] JS: nativeCalls bridge + permission flow, calls API, useCalls hooks,
+      useCallBackup pipeline (read log → sync → match recordings by time →
+      upload), CallCard + CallsScreen, "Calls" tab.
+- [ ] **Device verify**: grant READ_CALL_LOG + audio, back up, confirm calls
+      + recordings land and play via the presigned URL.
 
 ### Phase 3 — Missed-call auto-reply (Android) ⬜ 0%
 - Call-state detection + configurable auto-SMS (default message with `— AI Assistant` signature).

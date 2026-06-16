@@ -3,10 +3,12 @@ import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { HomeScreen } from '@/screens/HomeScreen';
 import { SpendingScreen } from '@/screens/SpendingScreen';
+import { CallsScreen } from '@/screens/CallsScreen';
 
 export type AppTabsParamList = {
   Dashboard: undefined;
   Spending: undefined;
+  Calls: undefined;
 };
 
 const Tab = createBottomTabNavigator<AppTabsParamList>();
@@ -35,6 +37,11 @@ export function AppTabs() {
         name="Spending"
         component={SpendingScreen}
         options={{ tabBarIcon: tabIcon('💰') }}
+      />
+      <Tab.Screen
+        name="Calls"
+        component={CallsScreen}
+        options={{ tabBarIcon: tabIcon('📞') }}
       />
     </Tab.Navigator>
   );
