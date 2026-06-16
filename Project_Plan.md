@@ -158,7 +158,7 @@ After a completed call **with a saved contact**, generate a recap:
 
 ## 6. Phased Roadmap
 
-**Overall progress: ~72%** (Phase 0 done; Phases 1–5 & 7 built, Phase 6 blocked on macOS; device/API-key verify pending)
+**Overall progress: ~76%** (Phase 0 done; Phases 1–5 & 7 built + backends verified; Phase 6 backend done, iOS UI blocked on macOS; device/API-key verify pending)
 
 | Phase | Status | % |
 |---|---|---|
@@ -168,8 +168,8 @@ After a completed call **with a saved contact**, generate a recap:
 | Phase 3 — Missed-call auto-reply | 🟡 In progress | 85% |
 | Phase 4 — Post-call recap | 🟡 In progress | 80% |
 | Phase 5 — Analytics & stats | 🟡 In progress | 90% |
-| Phase 6 — iOS client | 🟠 Blocked (needs macOS) | 30% |
-| Phase 7 — Upcoming features | 🟡 In progress | 70% |
+| Phase 6 — iOS client | 🟠 Backend done; iOS UI needs macOS | 50% |
+| Phase 7 — Upcoming features | 🟡 In progress | 80% |
 
 ### Phase 0 — Scaffold ✅ 100%
 - [x] Monorepo (yarn workspaces), folder structure, shared types package.
@@ -261,18 +261,23 @@ After a completed call **with a saved contact**, generate a recap:
       client over the shared backend — login, dashboard, spending list, calls
       list, settings all work; capture/sync actions degrade to "needs the
       Android app". This is exactly Phase 6's stated intent.
+- [x] Backend for iOS-capable capture is built ahead of the UI:
+      **MediaModule** (photo/video upload + list, dedupe, presigned URLs) and
+      **LocationModule** (GPS point sync + haversine distance/KM). Verified.
 - [ ] **Blocked**: building/running the iOS target needs macOS + Xcode (not
-      available on this Windows box). iOS-only capture (photo/video backup,
-      location/KM) needs new iOS native modules + a Mac to build/verify.
-      Backend for those features can be added here ahead of the iOS UI.
+      available on this Windows box). The iOS-native capture modules
+      (camera-roll/photo backup, CoreLocation GPS) + on-device UI need a Mac
+      to build/verify.
 
 ### Phase 7 — Upcoming features 🟡 70%
 - [x] Subscription detector: infers recurring subscriptions from debit SMS
       (merchant + median amount + cadence). Backend + dashboard. **Verified.**
 - [x] Peak usage: call volume by hour of day; busiest hour on the dashboard.
       **Verified.**
-- [ ] File search, KM traveled (depends on Phase 6 location capture), and
-      other "nice to have" detectors — not yet built.
+- [x] KM traveled: backend haversine distance (Phase 6 LocationModule) +
+      "Distance (30d)" stat on the dashboard. Backend verified; on-device GPS
+      sync needs a location-capture native module (Phase 6 device work).
+- [ ] File search and other "nice to have" detectors — not yet built.
 
 ---
 

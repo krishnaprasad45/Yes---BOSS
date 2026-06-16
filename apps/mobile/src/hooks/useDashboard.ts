@@ -5,6 +5,7 @@ import {
   getPeakUsage,
   getSubscriptions,
 } from '@/services/api/stats.api';
+import { getDistance } from '@/services/api/location.api';
 
 export function useDashboardStats(range?: { from?: string; to?: string }) {
   return useQuery({
@@ -31,5 +32,12 @@ export function usePeakUsage() {
   return useQuery({
     queryKey: ['stats', 'peak-usage'],
     queryFn: getPeakUsage,
+  });
+}
+
+export function useDistance() {
+  return useQuery({
+    queryKey: ['stats', 'distance'],
+    queryFn: () => getDistance(),
   });
 }

@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import {
   useDailyDigest,
   useDashboardStats,
+  useDistance,
   usePeakUsage,
   useSubscriptions,
 } from '@/hooks/useDashboard';
@@ -37,6 +38,7 @@ export function HomeScreen() {
   const digest = useDailyDigest();
   const subs = useSubscriptions();
   const peak = usePeakUsage();
+  const distance = useDistance();
 
   const refreshing = overview.isRefetching || digest.isRefetching;
   const onRefresh = () => {
@@ -44,6 +46,7 @@ export function HomeScreen() {
     digest.refetch();
     subs.refetch();
     peak.refetch();
+    distance.refetch();
   };
 
   const stats = overview.data?.data;
@@ -133,11 +136,15 @@ export function HomeScreen() {
         </Section>
       )}
 
-      {busiest.hour >= 0 && (
-        <Section title="Call activity">
+      {(busiest.hour >= 0 || distance.data) && (
+        <Section title="Activity">
           <View style={styles.row}>
-            <Stat label="Busiest hour" value={formatHour(busiest.hour)} />
-            <Stat label="Calls then" value={String(busiest.count)} />
+            {busiest.hour >= 0 && (
+              <Stat label="Busiest hour" value={formatHour(busiest.hour)} />
+            )}
+            {distance.data && (
+              <Stat label="Distance (30d)" value={`${distance.data.data.totalKm} km`} />
+            )}
           </View>
         </Section>
       )}
