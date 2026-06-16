@@ -1,4 +1,5 @@
 import { NativeModules, PermissionsAndroid, Platform } from 'react-native';
+import type { Permission } from 'react-native';
 import type { Call } from '@yes-boss/shared';
 
 export interface NativeCallLogEntry {
@@ -32,20 +33,36 @@ export function isCallBackupAvailable(): boolean {
   return Platform.OS === 'android' && !!CallLogReader && !!RecordingsReader;
 }
 
-/** READ_CALL_LOG + audio storage. Returns true only when all are granted. */
-export async function requestCallBackupPermissions(): Promise<boolean> {
-  if (Platform.OS !== 'android') return false;
-  const perms = [PermissionsAndroid.PERMISSIONS.READ_CALL_LOG];
-  // Android 13+ uses READ_MEDIA_AUDIO; older uses READ_EXTERNAL_STORAGE.
-  const audio =
-    PermissionsAndroid.PERMISSIONS.READ_MEDIA_AUDIO ??
-    PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
-  if (audio) perms.push(audio);
+/** The audio-read permission that actually exists on this OS version. */
+function audioPermission(): Permission {
+  // READ_MEDIA_AUDIO only exists on Android 13+ (API 33). On older versions it
+  // is an unknown permission and can never be granted — use legacy storage.
+  return Number(Platform.Version) >= 33
+    ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_AUDIO
+    : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+}
 
-  const granted = await PermissionsAndroid.requestMultiple(perms);
-  return perms.every(
-    p => granted[p] === PermissionsAndroid.RESULTS.GRANTED,
-  );
+/**
+ * Requests call-log + audio read. READ_CALL_LOG is mandatory (it gates the
+ * whole feature); audio is best-effort — without it we still sync the call log,
+ * just skip recordings. Returns whether each was granted.
+ */
+export async function requestCallBackupPermissions(): Promise<{
+  callLog: boolean;
+  audio: boolean;
+}> {
+  if (Platform.OS !== 'android') return { callLog: false, audio: false };
+  const audio = audioPermission();
+  const granted = await PermissionsAndroid.requestMultiple([
+    PermissionsAndroid.PERMISSIONS.READ_CALL_LOG,
+    audio,
+  ]);
+  return {
+    callLog:
+      granted[PermissionsAndroid.PERMISSIONS.READ_CALL_LOG] ===
+      PermissionsAndroid.RESULTS.GRANTED,
+    audio: granted[audio] === PermissionsAndroid.RESULTS.GRANTED,
+  };
 }
 
 export async function readCallLog(afterMs = 0, limit = 500): Promise<NativeCallLogEntry[]> {

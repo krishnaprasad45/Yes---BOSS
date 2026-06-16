@@ -58,9 +58,10 @@ export function useCallBackup() {
     }
     setIsBackingUp(true);
     try {
-      const granted = await requestCallBackupPermissions();
-      if (!granted) {
-        Toast.show({ type: 'error', text1: 'Call/storage permission denied' });
+      const perms = await requestCallBackupPermissions();
+      // Call log is mandatory; audio (recordings) is best-effort.
+      if (!perms.callLog) {
+        Toast.show({ type: 'error', text1: 'Call-log permission denied' });
         return;
       }
 
@@ -74,28 +75,35 @@ export function useCallBackup() {
       }));
       if (items.length > 0) await syncCalls(items);
 
-      const recordings = await listRecordings(0, 200);
+      // Recordings only when audio storage is granted; never block the log sync.
       let uploaded = 0;
-      for (const rec of recordings) {
-        const call = matchCall(rec, log);
-        if (!call) continue;
-        const meta: UploadCallMeta = {
-          contactName: call.contactName,
-          phoneNumber: call.phoneNumber,
-          direction: call.direction,
-          durationSec: call.durationSec,
-          occurredAt: new Date(call.occurredAtMs).toISOString(),
-          sourceFileName: rec.name,
-        };
+      if (perms.audio) {
         try {
-          await uploadRecording(meta, {
-            uri: rec.uri,
-            name: rec.name,
-            type: guessMime(rec.name),
-          });
-          uploaded++;
+          const recordings = await listRecordings(0, 200);
+          for (const rec of recordings) {
+            const call = matchCall(rec, log);
+            if (!call) continue;
+            const meta: UploadCallMeta = {
+              contactName: call.contactName,
+              phoneNumber: call.phoneNumber,
+              direction: call.direction,
+              durationSec: call.durationSec,
+              occurredAt: new Date(call.occurredAtMs).toISOString(),
+              sourceFileName: rec.name,
+            };
+            try {
+              await uploadRecording(meta, {
+                uri: rec.uri,
+                name: rec.name,
+                type: guessMime(rec.name),
+              });
+              uploaded++;
+            } catch {
+              // skip this file; keep going
+            }
+          }
         } catch {
-          // skip this file; keep going
+          // recordings unavailable — call log already synced, that's fine
         }
       }
 
