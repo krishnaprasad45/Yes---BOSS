@@ -28,6 +28,25 @@ export interface DashboardStats {
   spending: SpendingStats;
 }
 
+/** A recurring debit the detector inferred from SMS transactions (Phase 7). */
+export interface Subscription {
+  merchant: string;
+  /** Typical charge amount in minor units. */
+  amountMinor: number;
+  /** Times seen in the window. */
+  occurrences: number;
+  /** Rough cadence in days between charges. */
+  cadenceDays: number;
+  /** ISO timestamp of the most recent charge. */
+  lastChargedAt: string;
+}
+
+/** Call volume by hour of day (0–23), for spotting peak usage (Phase 7). */
+export interface PeakUsageBucket {
+  hour: number;
+  count: number;
+}
+
 /** One-day rollup for the daily digest. */
 export interface DailyDigest {
   date: string; // YYYY-MM-DD

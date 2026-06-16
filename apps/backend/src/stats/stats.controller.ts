@@ -20,4 +20,16 @@ export class StatsController {
     const digest = await this.service.digest(query.date);
     return ok(digest, "Daily digest");
   }
+
+  @Get("subscriptions")
+  async subscriptions() {
+    const subs = await this.service.subscriptions();
+    return ok(subs, "Detected subscriptions");
+  }
+
+  @Get("peak-usage")
+  async peakUsage(@Query() query: RangeQueryDto) {
+    const buckets = await this.service.peakUsage(query.from, query.to);
+    return ok(buckets, "Call volume by hour");
+  }
 }
