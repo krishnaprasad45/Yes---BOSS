@@ -7,6 +7,7 @@ import { SmsTxnModule } from "./sms-txn/sms-txn.module";
 import { CallModule } from "./call/call.module";
 import { SettingsModule } from "./settings/settings.module";
 import { RecapModule } from "./recap/recap.module";
+import { StatsModule } from "./stats/stats.module";
 import { HealthController } from "./health/health.controller";
 
 @Module({
@@ -19,6 +20,7 @@ import { HealthController } from "./health/health.controller";
     CallModule,
     SettingsModule,
     RecapModule,
+    StatsModule,
   ],
   controllers: [HealthController],
 })
