@@ -158,18 +158,19 @@ After a completed call **with a saved contact**, generate a recap:
 
 ## 6. Phased Roadmap
 
-**Overall progress: ~76%** (Phase 0 done; Phases 1–5 & 7 built + backends verified; Phase 6 backend done, iOS UI blocked on macOS; device/API-key verify pending)
+**Overall progress: ~85%** (Phases 1, 2, 5, 7 device-verified with real data; UI restyled to Stitch & verified on device; Phase 4 needs API keys; Phase 6 iOS needs macOS)
 
 | Phase | Status | % |
 |---|---|---|
 | Phase 0 — Scaffold | ✅ Complete | 100% |
-| Phase 1 — SMS analytics | 🟡 In progress | 85% |
-| Phase 2 — Call backup | 🟡 In progress | 85% |
-| Phase 3 — Missed-call auto-reply | 🟡 In progress | 85% |
-| Phase 4 — Post-call recap | 🟡 In progress | 80% |
-| Phase 5 — Analytics & stats | 🟡 In progress | 90% |
+| Phase 1 — SMS analytics | ✅ Device-verified | 100% |
+| Phase 2 — Call backup | ✅ Device-verified | 100% |
+| Phase 3 — Missed-call auto-reply | 🟡 Config verified; trigger passive | 90% |
+| Phase 4 — Post-call recap | 🟡 Wiring done; needs API keys | 80% |
+| Phase 5 — Analytics & stats | ✅ Device-verified (real data) | 100% |
 | Phase 6 — iOS client | 🟠 Backend done; iOS UI needs macOS | 50% |
-| Phase 7 — Upcoming features | 🟡 In progress | 80% |
+| Phase 7 — Upcoming features | 🟡 Subs + peak + KM verified | 85% |
+| UI — Google Stitch restyle | ✅ Built + device-verified | 100% |
 
 ### Phase 0 — Scaffold ✅ 100%
 - [x] Monorepo (yarn workspaces), folder structure, shared types package.
