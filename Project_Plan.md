@@ -158,7 +158,7 @@ After a completed call **with a saved contact**, generate a recap:
 
 ## 6. Phased Roadmap
 
-**Overall progress: ~58%** (Phase 0 done; Phases 1–4 ~80–85%, device/API-key verify pending)
+**Overall progress: ~67%** (Phase 0 done; Phases 1–5 ~80–90%, device/API-key verify pending)
 
 | Phase | Status | % |
 |---|---|---|
@@ -167,7 +167,7 @@ After a completed call **with a saved contact**, generate a recap:
 | Phase 2 — Call backup | 🟡 In progress | 85% |
 | Phase 3 — Missed-call auto-reply | 🟡 In progress | 85% |
 | Phase 4 — Post-call recap | 🟡 In progress | 80% |
-| Phase 5 — Analytics & stats | ⬜ Not started | 0% |
+| Phase 5 — Analytics & stats | 🟡 In progress | 90% |
 | Phase 6 — iOS client | ⬜ Not started | 0% |
 | Phase 7 — Upcoming features | ⬜ Not started | 0% |
 
@@ -244,8 +244,15 @@ After a completed call **with a saved contact**, generate a recap:
       recording through transcription + summary end-to-end.
 - [ ] Self-recap / recap-to-contact delivery via WhatsApp/email (deferred).
 
-### Phase 5 — Analytics & stats ⬜ 0%
-- Usage time, spending patterns, daily digest.
+### Phase 5 — Analytics & stats 🟡 90%
+- [x] Backend StatsModule: GET /stats/overview (call stats — counts by
+      direction, total talk time, top contacts — + spending stats over a
+      range) and GET /stats/digest (one-day rollup). **Verified via node.**
+- [x] Mobile: stats API + useDashboard hooks; HomeScreen rebuilt as the real
+      dashboard (today's digest + 30-day call & money stats + top contacts,
+      pull-to-refresh).
+- [ ] **Device verify**: confirm the dashboard renders live aggregates on the
+      phone. (Daily digest day-boundary is UTC — revisit for IST if needed.)
 
 ### Phase 6 — iOS client ⬜ 0%
 - Build iOS as a view/dashboard client over the shared backend.
