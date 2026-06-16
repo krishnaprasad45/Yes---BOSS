@@ -5,6 +5,7 @@ import { StorageModule } from "./storage/storage.module";
 import { AuthModule } from "./auth/auth.module";
 import { SmsTxnModule } from "./sms-txn/sms-txn.module";
 import { CallModule } from "./call/call.module";
+import { SettingsModule } from "./settings/settings.module";
 import { HealthController } from "./health/health.controller";
 
 @Module({
@@ -15,6 +16,7 @@ import { HealthController } from "./health/health.controller";
     AuthModule,
     SmsTxnModule,
     CallModule,
+    SettingsModule,
   ],
   controllers: [HealthController],
 })

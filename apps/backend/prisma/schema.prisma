@@ -17,6 +17,17 @@ model User {
   updatedAt     DateTime       @updatedAt
 }
 
+model AutoReplyConfig {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  enabled         Boolean  @default(false)
+  message         String   @default("Sorry, I missed your call. I'll get back to you shortly.")
+  signature       String   @default("— AI Assistant")
+  // Don't auto-reply to the same number more than once per this many minutes.
+  cooldownMinutes Int      @default(60)
+  updatedAt       DateTime @updatedAt
+}
+
 model RefreshToken {
   id        String   @id @default(uuid())
   tokenHash String   @unique
