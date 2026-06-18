@@ -158,7 +158,7 @@ After a completed call **with a saved contact**, generate a recap:
 
 ## 6. Phased Roadmap
 
-**Overall progress: ~90%** (Phases 1, 2, 3, 5, 7 device-verified with real data — incl. live missed-call auto-reply and 514-call backup; UI restyled to Stitch & verified on device; Phase 4 needs API keys; Phase 6 iOS needs macOS)
+**Overall progress: ~92%** (Phases 1, 2, 3, 5, 7 device-verified with real data — incl. live missed-call auto-reply, 514-call backup, and on-device GPS distance tracking; UI restyled to Stitch & verified on device; Phase 4 needs API keys; Phase 6 iOS needs macOS)
 
 | Phase | Status | % |
 |---|---|---|
@@ -169,7 +169,7 @@ After a completed call **with a saved contact**, generate a recap:
 | Phase 4 — Post-call recap | 🟡 Wiring done; needs API keys | 80% |
 | Phase 5 — Analytics & stats | ✅ Device-verified (real data) | 100% |
 | Phase 6 — iOS client | 🟠 Backend done; iOS UI needs macOS | 50% |
-| Phase 7 — Upcoming features | 🟡 Subs + peak + KM verified | 85% |
+| Phase 7 — Upcoming features | ✅ Subs + peak + KM device-verified | 95% |
 | UI — Google Stitch restyle | ✅ Built + device-verified | 100% |
 
 ### Phase 0 — Scaffold ✅ 100%
@@ -277,14 +277,16 @@ After a completed call **with a saved contact**, generate a recap:
       (camera-roll/photo backup, CoreLocation GPS) + on-device UI need a Mac
       to build/verify.
 
-### Phase 7 — Upcoming features 🟡 70%
+### Phase 7 — Upcoming features 🟡 95%
 - [x] Subscription detector: infers recurring subscriptions from debit SMS
       (merchant + median amount + cadence). Backend + dashboard. **Verified.**
 - [x] Peak usage: call volume by hour of day; busiest hour on the dashboard.
       **Verified.**
-- [x] KM traveled: backend haversine distance (Phase 6 LocationModule) +
-      "Distance (30d)" stat on the dashboard. Backend verified; on-device GPS
-      sync needs a location-capture native module (Phase 6 device work).
+- [x] KM traveled: backend haversine distance + "Distance (30d)" stat on the
+      dashboard. **On-device GPS now wired** (@react-native-community/geolocation,
+      foreground watchPosition, Settings toggle) and **device-verified** — real
+      fix synced. Distance calc skips >5-min gaps so separate trips don't sum as
+      a teleport (bug found on device).
 - [ ] File search and other "nice to have" detectors — not yet built.
 
 ---
