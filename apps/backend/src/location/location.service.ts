@@ -7,6 +7,10 @@ import { DistanceQueryDto, SyncLocationDto } from "./dto";
 const EARTH_RADIUS_M = 6_371_000;
 // Ignore GPS jitter below this between consecutive points.
 const MIN_SEGMENT_M = 10;
+// Two fixes farther apart in time than this aren't one continuous track (the
+// app was closed, phone off, etc.) — don't sum the straight-line "teleport"
+// between separate trips/days as distance travelled.
+const MAX_SEGMENT_GAP_MS = 5 * 60 * 1000;
 
 @Injectable()
 export class LocationService {
@@ -40,17 +44,17 @@ export class LocationService {
     const points = await this.prisma.locationPoint.findMany({
       where,
       orderBy: { recordedAt: "asc" },
-      select: { lat: true, lng: true },
+      select: { lat: true, lng: true, recordedAt: true },
     });
 
     let totalMeters = 0;
     for (let i = 1; i < points.length; i++) {
-      const seg = haversine(
-        points[i - 1].lat,
-        points[i - 1].lng,
-        points[i].lat,
-        points[i].lng,
-      );
+      const prev = points[i - 1];
+      const cur = points[i];
+      const gapMs = cur.recordedAt.getTime() - prev.recordedAt.getTime();
+      // Only sum movement within a continuous track; skip cross-trip gaps.
+      if (gapMs > MAX_SEGMENT_GAP_MS) continue;
+      const seg = haversine(prev.lat, prev.lng, cur.lat, cur.lng);
       if (seg >= MIN_SEGMENT_M) totalMeters += seg;
     }
 

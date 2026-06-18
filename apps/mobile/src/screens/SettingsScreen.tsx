@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAutoReply } from '@/hooks/useAutoReply';
+import { useLocationTracking } from '@/hooks/useLocationTracking';
 import { colors, font, radius, spacing } from '@/theme/theme';
 import { Badge, Card, IconTile, PrimaryButton, SectionHeader } from '@/components/ui';
 
 /** Assistant settings — missed-call auto-reply (Phase 3). */
 export function SettingsScreen() {
   const { config, isLoading, save, isSaving } = useAutoReply();
+  const { isTracking, pointsSynced, toggle: toggleTracking } = useLocationTracking();
 
   const [enabled, setEnabled] = useState(false);
   const [message, setMessage] = useState('');
@@ -101,6 +103,30 @@ export function SettingsScreen() {
             placeholderTextColor={colors.textFaint}
           />
           <Text style={styles.hint}>Won't text the same number again within this window.</Text>
+        </Card>
+
+        {/* Location tracking — feeds the "Distance (30d)" dashboard stat. */}
+        <Card style={styles.card}>
+          <View style={styles.cardHead}>
+            <View style={styles.headLeft}>
+              <IconTile glyph="📍" bg={colors.tileGreen} size={40} />
+              <View>
+                <Text style={styles.cardTitle}>Distance tracking</Text>
+                <Text style={styles.cardSub}>GPS while the app is open</Text>
+              </View>
+            </View>
+            <Switch
+              value={isTracking}
+              onValueChange={toggleTracking}
+              trackColor={{ true: colors.primary, false: '#D9DBE6' }}
+              thumbColor="#fff"
+            />
+          </View>
+          <Text style={styles.hint}>
+            {isTracking
+              ? `Tracking… ${pointsSynced} point${pointsSynced === 1 ? '' : 's'} synced this session.`
+              : 'Turn on to record kilometres travelled on the dashboard.'}
+          </Text>
         </Card>
 
         {/* Recap delivery — reflects backend default (self-recap). */}
