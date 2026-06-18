@@ -158,14 +158,14 @@ After a completed call **with a saved contact**, generate a recap:
 
 ## 6. Phased Roadmap
 
-**Overall progress: ~85%** (Phases 1, 2, 5, 7 device-verified with real data; UI restyled to Stitch & verified on device; Phase 4 needs API keys; Phase 6 iOS needs macOS)
+**Overall progress: ~90%** (Phases 1, 2, 3, 5, 7 device-verified with real data — incl. live missed-call auto-reply and 514-call backup; UI restyled to Stitch & verified on device; Phase 4 needs API keys; Phase 6 iOS needs macOS)
 
 | Phase | Status | % |
 |---|---|---|
 | Phase 0 — Scaffold | ✅ Complete | 100% |
 | Phase 1 — SMS analytics | ✅ Device-verified | 100% |
 | Phase 2 — Call backup | ✅ Device-verified | 100% |
-| Phase 3 — Missed-call auto-reply | 🟡 Config verified; trigger passive | 90% |
+| Phase 3 — Missed-call auto-reply | ✅ Device-verified (SMS sent on real miss) | 100% |
 | Phase 4 — Post-call recap | 🟡 Wiring done; needs API keys | 80% |
 | Phase 5 — Analytics & stats | ✅ Device-verified (real data) | 100% |
 | Phase 6 — iOS client | 🟠 Backend done; iOS UI needs macOS | 50% |
@@ -189,7 +189,7 @@ After a completed call **with a saved contact**, generate a recap:
 > network-security config for the localhost backend. Build needs JDK 17 +
 > Android SDK (installed).
 
-### Phase 1 — SMS analytics (Feature 2) 🟡 85%
+### Phase 1 — SMS analytics (Feature 2) ✅ 100%
 - [x] Backend SMS module: sync (idempotent dedupe), list (paginated +
       filters), summary (totals + category breakdown + due count). Committed.
 - [x] On-device SMS parsing pipeline (`services/smsParsers/`) +
@@ -199,11 +199,11 @@ After a completed call **with a saved contact**, generate a recap:
 - [x] Native Android SMS-read module (Kotlin: `READ_SMS` + inbox query) with
       JS bridge, runtime-permission flow, and a "Sync SMS" action.
 - [x] Backend SMS module verified end-to-end (sync/dedupe/list/summary).
-- [ ] **Device verify**: build/install release, grant READ_SMS, scan inbox,
-      confirm real transactions land in the Spending screen.
+- [x] **Device verified** (Samsung Android 10): granted READ_SMS, scanned inbox,
+      real transactions landed in the Spending screen.
 - Proves the full pipeline: device → backend → DB → dashboard.
 
-### Phase 2 — Call backup (Feature 1) 🟡 85%
+### Phase 2 — Call backup (Feature 1) ✅ 100%
 - [x] Backend StorageService (MinIO/S3): bucket auto-create, object put,
       short-lived presigned GET URLs.
 - [x] Backend CallModule: log sync (dedupe by phone+time), multipart
@@ -215,10 +215,13 @@ After a completed call **with a saved contact**, generate a recap:
 - [x] JS: nativeCalls bridge + permission flow, calls API, useCalls hooks,
       useCallBackup pipeline (read log → sync → match recordings by time →
       upload), CallCard + CallsScreen, "Calls" tab.
-- [ ] **Device verify**: grant READ_CALL_LOG + audio, back up, confirm calls
-      + recordings land and play via the presigned URL.
+- [x] **Device verified** (Samsung Android 10): granted READ_CALL_LOG + audio,
+      backed up **514 calls** + Samsung Call-folder recordings; recordings stored
+      in MinIO and playable via the presigned URL. Fixed a version-aware audio
+      permission (READ_MEDIA_AUDIO is API 33+; older Android needs
+      READ_EXTERNAL_STORAGE) — call-log sync mandatory, recordings best-effort.
 
-### Phase 3 — Missed-call auto-reply (Android) 🟡 85%
+### Phase 3 — Missed-call auto-reply (Android) ✅ 100%
 - [x] Backend AutoReplyConfig (enabled, message, signature, cooldown) +
       GET/PUT /settings/auto-reply. **Verified via node.**
 - [x] Native AutoReplyReceiver (PHONE_STATE): ring→idle = missed, looks up the
@@ -228,8 +231,12 @@ After a completed call **with a saved contact**, generate a recap:
       SEND_SMS / READ_PHONE_STATE permission flow.
 - [x] settings API + useAutoReply hook (mirrors server config to native) +
       SettingsScreen (toggle, message, signature, cooldown) + Settings tab.
-- [ ] **Device verify**: enable, miss a call, confirm the caller gets the
-      auto-SMS and the cooldown suppresses repeats.
+- [x] **Device verified** (Samsung Android 10): enabled + armed, missed a real
+      call from a second phone, caller received the auto-SMS. Fixed two Android-10
+      bugs found on-device — receiver no longer relies on fragile static state
+      across the RINGING→IDLE broadcasts (reads the newest MISSED call-log row on
+      IDLE instead), and SmsManager uses `getDefault()` on API < 31 where
+      `getSystemService(SmsManager)` returns null.
 
 ### Phase 4 — Post-call recap (Android) 🟡 80%
 - [x] Backend RecapModule: pull recording from storage → Whisper transcription
