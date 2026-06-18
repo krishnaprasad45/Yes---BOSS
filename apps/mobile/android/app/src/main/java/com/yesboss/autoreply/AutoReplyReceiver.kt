@@ -3,6 +3,7 @@ package com.yesboss.autoreply
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.provider.CallLog
 import android.telephony.SmsManager
 import android.telephony.TelephonyManager
@@ -21,40 +22,45 @@ class AutoReplyReceiver : BroadcastReceiver() {
 
   companion object {
     private const val TAG = "AutoReplyReceiver"
-    private var lastState = TelephonyManager.CALL_STATE_IDLE
-    private var wasRinging = false
   }
 
   override fun onReceive(context: Context, intent: Intent) {
     if (intent.action != TelephonyManager.ACTION_PHONE_STATE_CHANGED) return
     val stateStr = intent.getStringExtra(TelephonyManager.EXTRA_STATE) ?: return
-    val state = when (stateStr) {
-      TelephonyManager.EXTRA_STATE_RINGING -> TelephonyManager.CALL_STATE_RINGING
-      TelephonyManager.EXTRA_STATE_OFFHOOK -> TelephonyManager.CALL_STATE_OFFHOOK
-      else -> TelephonyManager.CALL_STATE_IDLE
-    }
-    if (state == lastState) return
+    Log.i(TAG, "PHONE_STATE = $stateStr")
 
-    when (state) {
-      TelephonyManager.CALL_STATE_RINGING -> wasRinging = true
-      TelephonyManager.CALL_STATE_OFFHOOK -> wasRinging = false // answered, not missed
-      TelephonyManager.CALL_STATE_IDLE -> {
-        if (wasRinging) onMissedCall(context)
-        wasRinging = false
-      }
-    }
-    lastState = state
+    // A BroadcastReceiver is recreated per broadcast, so static state between the
+    // RINGING and IDLE deliveries is unreliable (the process can be recycled in
+    // between). Instead, on every transition to IDLE we look at the call log for
+    // a just-now MISSED call. The latestMissedNumber() time window + the
+    // per-number cooldown make this safe against false / duplicate replies.
+    if (stateStr != TelephonyManager.EXTRA_STATE_IDLE) return
+
+    // The call-log row for the missed call may land a beat after the IDLE
+    // broadcast; give it a moment before reading.
+    Thread.sleep(1500)
+    onMissedCall(context)
   }
 
   private fun onMissedCall(context: Context) {
     val prefs = AutoReplyStore.prefs(context)
-    if (!prefs.getBoolean(AutoReplyStore.KEY_ENABLED, false)) return
+    if (!prefs.getBoolean(AutoReplyStore.KEY_ENABLED, false)) {
+      Log.i(TAG, "auto-reply disabled in prefs — skipping")
+      return
+    }
 
-    val number = latestMissedNumber(context) ?: return
+    val number = latestMissedNumber(context)
+    if (number == null) {
+      Log.i(TAG, "no recent missed call found")
+      return
+    }
     val cooldownMs =
       prefs.getInt(AutoReplyStore.KEY_COOLDOWN, 60).toLong() * 60_000L
     val lastReply = prefs.getLong(AutoReplyStore.lastReplyKey(number), 0L)
-    if (System.currentTimeMillis() - lastReply < cooldownMs) return
+    if (System.currentTimeMillis() - lastReply < cooldownMs) {
+      Log.i(TAG, "within cooldown for $number — skipping")
+      return
+    }
 
     val message = prefs.getString(AutoReplyStore.KEY_MESSAGE, "") ?: ""
     val signature = prefs.getString(AutoReplyStore.KEY_SIGNATURE, "") ?: ""
@@ -62,7 +68,15 @@ class AutoReplyReceiver : BroadcastReceiver() {
     if (body.isBlank()) return
 
     try {
-      val sms = context.getSystemService(SmsManager::class.java)
+      // getSystemService(SmsManager) returns null below API 31 — use the
+      // deprecated getDefault() on older Android (this device is API 29).
+      val sms =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+          context.getSystemService(SmsManager::class.java)
+        } else {
+          @Suppress("DEPRECATION")
+          SmsManager.getDefault()
+        }
       val parts = sms.divideMessage(body)
       sms.sendMultipartTextMessage(number, null, parts, null, null)
       prefs.edit()
