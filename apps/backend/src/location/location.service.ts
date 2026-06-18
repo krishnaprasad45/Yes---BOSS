@@ -47,16 +47,7 @@ export class LocationService {
       select: { lat: true, lng: true, recordedAt: true },
     });
 
-    let totalMeters = 0;
-    for (let i = 1; i < points.length; i++) {
-      const prev = points[i - 1];
-      const cur = points[i];
-      const gapMs = cur.recordedAt.getTime() - prev.recordedAt.getTime();
-      // Only sum movement within a continuous track; skip cross-trip gaps.
-      if (gapMs > MAX_SEGMENT_GAP_MS) continue;
-      const seg = haversine(prev.lat, prev.lng, cur.lat, cur.lng);
-      if (seg >= MIN_SEGMENT_M) totalMeters += seg;
-    }
+    const totalMeters = sumTrackMeters(points);
 
     return {
       from: fromDate.toISOString(),
@@ -66,6 +57,30 @@ export class LocationService {
       pointCount: points.length,
     };
   }
+}
+
+export interface TrackPoint {
+  lat: number;
+  lng: number;
+  recordedAt: Date;
+}
+
+/**
+ * Sums the distance (metres) along an ascending-time track. Pure + exported so
+ * it can be unit-tested. Skips GPS jitter (< MIN_SEGMENT_M) and breaks in the
+ * track longer than MAX_SEGMENT_GAP_MS (separate trips aren't one straight line).
+ */
+export function sumTrackMeters(points: TrackPoint[]): number {
+  let totalMeters = 0;
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const cur = points[i];
+    const gapMs = cur.recordedAt.getTime() - prev.recordedAt.getTime();
+    if (gapMs > MAX_SEGMENT_GAP_MS) continue;
+    const seg = haversine(prev.lat, prev.lng, cur.lat, cur.lng);
+    if (seg >= MIN_SEGMENT_M) totalMeters += seg;
+  }
+  return totalMeters;
 }
 
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
