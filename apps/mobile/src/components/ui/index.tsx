@@ -61,7 +61,7 @@ export function IconTile({
   );
 }
 
-/** Stat card: icon tile, big value, label, optional delta badge. */
+/** Stat card: icon tile, big value, label, optional right accessory + delta. */
 export function StatCard({
   glyph,
   tileBg,
@@ -69,6 +69,8 @@ export function StatCard({
   label,
   delta,
   deltaUp,
+  accessory,
+  onPress,
   style,
 }: {
   glyph: string;
@@ -77,11 +79,17 @@ export function StatCard({
   label: string;
   delta?: string;
   deltaUp?: boolean;
+  /** Optional node pinned to the card's top-right (e.g. a breakdown). */
+  accessory?: React.ReactNode;
+  onPress?: () => void;
   style?: ViewStyle;
 }) {
-  return (
-    <Card style={StyleSheet.flatten([styles.statCard, style])}>
-      <IconTile glyph={glyph} bg={tileBg} size={38} />
+  const body = (
+    <>
+      <View style={styles.statTopRow}>
+        <IconTile glyph={glyph} bg={tileBg} size={38} />
+        {accessory}
+      </View>
       <Text style={styles.statValue} numberOfLines={1}>
         {value}
       </Text>
@@ -93,8 +101,19 @@ export function StatCard({
           {deltaUp ? '↑' : '↓'} {delta}
         </Text>
       )}
-    </Card>
+    </>
   );
+  if (onPress) {
+    return (
+      <TouchableOpacity
+        style={StyleSheet.flatten([styles.card, styles.statCard, style])}
+        onPress={onPress}
+        activeOpacity={0.85}>
+        {body}
+      </TouchableOpacity>
+    );
+  }
+  return <Card style={StyleSheet.flatten([styles.statCard, style])}>{body}</Card>;
 }
 
 /** Pill chip used for filters; indigo when active. */
@@ -204,6 +223,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statCard: { flex: 1, gap: 6, padding: spacing.lg },
+  statTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
   statValue: { fontSize: font.size.xl, fontWeight: '700', color: colors.text, marginTop: 4 },
   statLabel: { fontSize: font.size.sm, color: colors.textMuted },
   delta: { fontSize: font.size.xs, fontWeight: '600', marginTop: 2 },

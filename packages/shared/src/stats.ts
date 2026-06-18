@@ -53,6 +53,8 @@ export interface DailyDigest {
   spentMinor: number;
   creditedMinor: number;
   callsCount: number;
+  incomingCount: number;
+  outgoingCount: number;
   missedCount: number;
   billsDue: number;
 }

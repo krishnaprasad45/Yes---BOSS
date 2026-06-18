@@ -49,8 +49,11 @@ export class StatsService {
       receivedAt: { gte: start, lt: end },
     };
 
-    const [callsCount, missedCount, debit, credit, billsDue] = await Promise.all([
+    const [callsCount, incomingCount, outgoingCount, missedCount, debit, credit, billsDue] =
+      await Promise.all([
       this.prisma.call.count({ where: callWhere }),
+      this.prisma.call.count({ where: { ...callWhere, direction: "incoming" } }),
+      this.prisma.call.count({ where: { ...callWhere, direction: "outgoing" } }),
       this.prisma.call.count({ where: { ...callWhere, direction: "missed" } }),
       this.prisma.smsTxn.aggregate({
         where: { ...txnWhere, type: "debit" },
@@ -68,6 +71,8 @@ export class StatsService {
       spentMinor: debit._sum.amountMinor ?? 0,
       creditedMinor: credit._sum.amountMinor ?? 0,
       callsCount,
+      incomingCount,
+      outgoingCount,
       missedCount,
       billsDue,
     };

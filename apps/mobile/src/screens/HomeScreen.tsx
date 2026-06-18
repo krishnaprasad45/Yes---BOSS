@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useDailyDigest,
@@ -43,6 +44,7 @@ function formatHour(h: number): string {
 
 /** Dashboard — greeting, today's overview grid, 30-day insights. */
 export function HomeScreen() {
+  const navigation = useNavigation<any>();
   const { user, logout } = useAuth();
   const overview = useDashboardStats();
   const digest = useDailyDigest();
@@ -92,7 +94,27 @@ export function HomeScreen() {
           <>
             <SectionHeader title="Today's Overview" />
             <View style={styles.grid}>
-              <StatCard glyph="📞" tileBg={colors.tileIndigo} value={String(day.callsCount)} label="Calls Today" />
+              <StatCard
+                glyph="📞"
+                tileBg={colors.tileIndigo}
+                value={String(day.callsCount)}
+                label="Calls Today"
+                onPress={() => navigation.navigate('Calls')}
+                accessory={
+                  <View style={styles.callBreakdown}>
+                    <View style={styles.breakRow}>
+                      <Text style={[styles.breakArrow, { color: colors.success }]}>{'↓︎'}</Text>
+                      <Text style={styles.breakNum}>{day.incomingCount}</Text>
+                      <Text style={styles.breakTag}>In</Text>
+                    </View>
+                    <View style={styles.breakRow}>
+                      <Text style={[styles.breakArrow, { color: colors.primary }]}>{'↑︎'}</Text>
+                      <Text style={styles.breakNum}>{day.outgoingCount}</Text>
+                      <Text style={styles.breakTag}>Out</Text>
+                    </View>
+                  </View>
+                }
+              />
               <StatCard glyph="💸" tileBg={colors.tileGreen} value={formatMinor(day.spentMinor)} label="Spent Today" />
             </View>
             <View style={styles.grid}>
@@ -209,6 +231,11 @@ const styles = StyleSheet.create({
   },
   error: { color: colors.danger, marginTop: spacing.lg },
   grid: { flexDirection: 'row', gap: spacing.md },
+  callBreakdown: { gap: 2, alignItems: 'flex-end' },
+  breakRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  breakArrow: { fontSize: font.size.sm, fontWeight: '700' },
+  breakNum: { fontSize: font.size.sm, fontWeight: '700', color: colors.text, minWidth: 12, textAlign: 'right' },
+  breakTag: { fontSize: font.size.xs, color: colors.textMuted, width: 22 },
   block: { gap: spacing.md },
   inlineStats: { flexDirection: 'row', gap: spacing.md },
   inline: { flex: 1, backgroundColor: colors.cardAlt, borderRadius: radius.md, padding: spacing.md },
