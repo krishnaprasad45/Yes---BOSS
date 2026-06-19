@@ -115,7 +115,7 @@ export function HomeScreen() {
                     <View style={styles.breakRow}>
                       <Text style={[styles.breakArrow, { color: colors.danger }]}>{'✕︎'}</Text>
                       <Text style={styles.breakNum}>{day.missedCount}</Text>
-                      <Text style={styles.breakTag}>Miss</Text>
+                      <Text style={styles.breakTag} numberOfLines={1}>Miss</Text>
                     </View>
                   </View>
                 }
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   breakRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   breakArrow: { fontSize: font.size.sm, fontWeight: '700' },
   breakNum: { fontSize: font.size.sm, fontWeight: '700', color: colors.text, minWidth: 12, textAlign: 'right' },
-  breakTag: { fontSize: font.size.xs, color: colors.textMuted, width: 22 },
+  breakTag: { fontSize: font.size.xs, color: colors.textMuted, width: 30 },
   block: { gap: spacing.md },
   inlineStats: { flexDirection: 'row', gap: spacing.md },
   inline: { flex: 1, backgroundColor: colors.cardAlt, borderRadius: radius.md, padding: spacing.md },
