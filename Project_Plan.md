@@ -248,8 +248,16 @@ After a completed call **with a saved contact**, generate a recap:
 - [x] Mobile: recap API + hooks, Calls stack (list → CallDetail), detail screen
       shows summary/transcript + Generate/Regenerate recap (gated on provider
       status). Cards show 🎙/📝 badges.
-- [ ] **Live verify**: set `ANTHROPIC_API_KEY` + `WHISPER_API_KEY`, run a real
-      recording through transcription + summary end-to-end.
+- [x] **Zero-cost provider**: SummaryService is now provider-agnostic —
+      OpenAI-compatible chat endpoint (`RECAP_BASE_URL`) preferred, Anthropic
+      Claude as fallback. Transcription was already pluggable
+      (`WHISPER_BASE_URL`). Both point at **Groq's free tier** by default
+      (`whisper-large-v3` + `llama-3.3-70b-versatile`) — one free key powers the
+      whole pipeline, fits AWS free-tier EC2 (no on-box model hosting). See
+      `.env.example`.
+- [ ] **Live verify**: drop a free Groq key into `RECAP_API_KEY` +
+      `WHISPER_API_KEY`, run a real recording through transcription + summary
+      end-to-end.
 - [ ] Self-recap / recap-to-contact delivery via WhatsApp/email (deferred).
 
 ### Phase 5 — Analytics & stats 🟡 90%
