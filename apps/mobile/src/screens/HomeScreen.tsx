@@ -112,6 +112,11 @@ export function HomeScreen() {
                       <Text style={styles.breakNum}>{day.outgoingCount}</Text>
                       <Text style={styles.breakTag}>Out</Text>
                     </View>
+                    <View style={styles.breakRow}>
+                      <Text style={[styles.breakArrow, { color: colors.danger }]}>{'✕︎'}</Text>
+                      <Text style={styles.breakNum}>{day.missedCount}</Text>
+                      <Text style={styles.breakTag}>Miss</Text>
+                    </View>
                   </View>
                 }
               />
