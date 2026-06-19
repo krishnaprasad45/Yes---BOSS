@@ -24,9 +24,9 @@ const RECAP_MODES: { key: RecapMode; label: string }[] = [
 
 const RECAP_MODE_HINT: Record<RecapMode, string> = {
   smart:
-    'Auto-sends only when the call has something actionable (date, time, number, price, follow-up). Otherwise asks first.',
+    'Auto-sends only when the call has something actionable (date, time, number, price, follow-up). Otherwise shows an editable preview to confirm.',
   always_send: 'Sends a recap SMS after every recorded call.',
-  always_ask: 'Never auto-sends — you confirm each recap from a notification.',
+  always_ask: 'Never auto-sends — every recap opens an editable preview you Send or Discard.',
 };
 
 /** Assistant settings — missed-call auto-reply (Phase 3). */

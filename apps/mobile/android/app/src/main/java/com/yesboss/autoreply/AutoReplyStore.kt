@@ -2,6 +2,8 @@ package com.yesboss.autoreply
 
 import android.content.Context
 import android.content.SharedPreferences
+import org.json.JSONArray
+import org.json.JSONObject
 
 /** Single source of truth for the auto-reply config the receiver reads. */
 object AutoReplyStore {
@@ -18,6 +20,10 @@ object AutoReplyStore {
   const val KEY_API_BASE = "api_base_url"
   const val KEY_DEVICE_TOKEN = "device_token"
 
+  // Recaps awaiting the owner's review/confirm (ask path) — JSON array of
+  // {id, number, body, who}. The in-app review screen reads + edits these.
+  private const val KEY_PENDING = "pending_recaps"
+
   fun prefs(context: Context): SharedPreferences =
     context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -28,4 +34,47 @@ object AutoReplyStore {
   /** Per-call de-dupe key so a given call is recapped at most once. */
   fun recappedKey(number: String, occurredAtMs: Long): String =
     "recapped_${number.filter { it.isDigit() || it == '+' }}_$occurredAtMs"
+
+  // --- Pending-recap queue (ask path) --------------------------------------
+
+  /** Queue a recap awaiting review; returns its id. */
+  fun addPending(context: Context, number: String, body: String, who: String): String {
+    val arr = pendingArray(context)
+    val id = "r${System.currentTimeMillis()}"
+    arr.put(
+      JSONObject()
+        .put("id", id)
+        .put("number", number)
+        .put("body", body)
+        .put("who", who),
+    )
+    prefs(context).edit().putString(KEY_PENDING, arr.toString()).apply()
+    return id
+  }
+
+  fun pendingArray(context: Context): JSONArray =
+    try {
+      JSONArray(prefs(context).getString(KEY_PENDING, "[]") ?: "[]")
+    } catch (e: Exception) {
+      JSONArray()
+    }
+
+  fun getPending(context: Context, id: String): JSONObject? {
+    val arr = pendingArray(context)
+    for (i in 0 until arr.length()) {
+      val o = arr.optJSONObject(i) ?: continue
+      if (o.optString("id") == id) return o
+    }
+    return null
+  }
+
+  fun removePending(context: Context, id: String) {
+    val arr = pendingArray(context)
+    val next = JSONArray()
+    for (i in 0 until arr.length()) {
+      val o = arr.optJSONObject(i) ?: continue
+      if (o.optString("id") != id) next.put(o)
+    }
+    prefs(context).edit().putString(KEY_PENDING, next.toString()).apply()
+  }
 }

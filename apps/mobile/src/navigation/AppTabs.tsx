@@ -5,6 +5,7 @@ import { HomeScreen } from '@/screens/HomeScreen';
 import { SpendingScreen } from '@/screens/SpendingScreen';
 import { CallsStack } from '@/navigation/CallsStack';
 import { SettingsScreen } from '@/screens/SettingsScreen';
+import { PendingRecapReview } from '@/components/feature/PendingRecapReview';
 import { colors } from '@/theme/theme';
 
 export type AppTabsParamList = {
@@ -25,6 +26,8 @@ function tabIcon(emoji: string) {
 
 export function AppTabs() {
   return (
+    <>
+    <PendingRecapReview />
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
@@ -60,5 +63,6 @@ export function AppTabs() {
         options={{ tabBarIcon: tabIcon('⚙️') }}
       />
     </Tab.Navigator>
+    </>
   );
 }
