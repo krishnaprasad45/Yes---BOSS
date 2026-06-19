@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import type { AutoReplyConfig, UpdateAutoReplyConfig } from '@yes-boss/shared';
@@ -6,9 +6,12 @@ import {
   getAutoReplyConfig,
   updateAutoReplyConfig,
 } from '@/services/api/settings.api';
+import { getDeviceToken } from '@/services/api/auth.api';
+import { BASE_URL } from '@/services/api/client';
 import {
   isAutoReplyAvailable,
   pushAutoReplyConfig,
+  pushRecapAuth,
   requestAutoReplyPermissions,
 } from '@/services/autoReply/nativeAutoReply';
 
@@ -31,6 +34,19 @@ export function useAutoReply() {
   useEffect(() => {
     if (config) pushAutoReplyConfig(config).catch(() => {});
   }, [config]);
+
+  // When recap is on, give the background worker a long-lived token + the API
+  // base URL it uses while the app is closed. Mint once per session.
+  const authPushed = useRef(false);
+  useEffect(() => {
+    if (!config?.recapEnabled || authPushed.current) return;
+    authPushed.current = true;
+    getDeviceToken()
+      .then(res => pushRecapAuth(`${BASE_URL}/api/v1`, res.data.deviceToken))
+      .catch(() => {
+        authPushed.current = false; // allow a retry on next config change
+      });
+  }, [config?.recapEnabled]);
 
   const mutation = useMutation({
     mutationFn: async (patch: UpdateAutoReplyConfig) => {

@@ -13,3 +13,8 @@ export async function login(
 export async function checkSecureHealth(): Promise<ItemResponse<{ up: boolean; db: boolean }>> {
   return apiFetch(`/api/v1/health/secure`);
 }
+
+/** Mint a long-lived token for the background recap worker. */
+export async function getDeviceToken(): Promise<ItemResponse<{ deviceToken: string }>> {
+  return apiFetch(`/api/v1/auth/device-token`, { method: 'POST' });
+}

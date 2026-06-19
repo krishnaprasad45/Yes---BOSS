@@ -24,6 +24,8 @@ export function SettingsScreen() {
   const [message, setMessage] = useState('');
   const [signature, setSignature] = useState('');
   const [cooldown, setCooldown] = useState('60');
+  const [recapEnabled, setRecapEnabled] = useState(false);
+  const [recapNumber, setRecapNumber] = useState('');
 
   useEffect(() => {
     if (!config) return;
@@ -31,6 +33,8 @@ export function SettingsScreen() {
     setMessage(config.message);
     setSignature(config.signature);
     setCooldown(String(config.cooldownMinutes));
+    setRecapEnabled(config.recapEnabled);
+    setRecapNumber(config.recapNumber);
   }, [config]);
 
   if (isLoading) {
@@ -48,6 +52,8 @@ export function SettingsScreen() {
       message: message.trim(),
       signature: signature.trim(),
       cooldownMinutes: Number.isFinite(mins) ? mins : 60,
+      recapEnabled,
+      recapNumber: recapNumber.trim(),
     });
   };
 
@@ -129,19 +135,37 @@ export function SettingsScreen() {
           </Text>
         </Card>
 
-        {/* Recap delivery — reflects backend default (self-recap). */}
+        {/* Auto call recap — texts you a summary after a recorded call. */}
         <Card style={styles.card}>
-          <SectionHeader title="Recap delivery" />
-          <Text style={styles.cardSub}>Who receives the post-call summary.</Text>
-          <View style={[styles.choice, styles.choiceActive]}>
-            <Text style={styles.choiceTextActive}>Self-recap only</Text>
-            <Text style={styles.radioOn}>●</Text>
+          <View style={styles.cardHead}>
+            <View style={styles.headLeft}>
+              <IconTile glyph="📝" bg={colors.tilePurple} size={40} />
+              <View>
+                <Text style={styles.cardTitle}>Auto call recap</Text>
+                <Text style={styles.cardSub}>Text me a summary after a call</Text>
+              </View>
+            </View>
+            <Switch
+              value={recapEnabled}
+              onValueChange={setRecapEnabled}
+              trackColor={{ true: colors.primary, false: '#D9DBE6' }}
+              thumbColor="#fff"
+            />
           </View>
-          <View style={styles.choice}>
-            <Text style={styles.choiceText}>Share with contact</Text>
-            <Text style={styles.radioOff}>○</Text>
-          </View>
-          <Text style={styles.hint}>Contact sharing & channels arrive in a later update.</Text>
+
+          <Text style={styles.label}>My number (where the recap is sent)</Text>
+          <TextInput
+            style={styles.input}
+            value={recapNumber}
+            onChangeText={setRecapNumber}
+            keyboardType="phone-pad"
+            placeholder="+91…"
+            placeholderTextColor={colors.textFaint}
+          />
+          <Text style={styles.hint}>
+            After a recorded call with a saved contact, you'll get an SMS recap —
+            heading, tone, summary. Recorded calls only.
+          </Text>
         </Card>
 
         {/* Active channels (status only for now). */}

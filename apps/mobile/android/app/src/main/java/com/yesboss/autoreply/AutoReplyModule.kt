@@ -36,10 +36,35 @@ class AutoReplyModule(reactContext: ReactApplicationContext) :
           AutoReplyStore.KEY_COOLDOWN,
           if (config.hasKey("cooldownMinutes")) config.getInt("cooldownMinutes") else 60,
         )
+        .putBoolean(
+          AutoReplyStore.KEY_RECAP_ENABLED,
+          if (config.hasKey("recapEnabled")) config.getBoolean("recapEnabled") else false,
+        )
+        .putString(
+          AutoReplyStore.KEY_RECAP_NUMBER,
+          if (config.hasKey("recapNumber")) config.getString("recapNumber") else "",
+        )
         .apply()
       promise.resolve(true)
     } catch (e: Exception) {
       promise.reject("AUTO_REPLY_CONFIG_ERROR", e.message, e)
+    }
+  }
+
+  /**
+   * Stores the API base URL + long-lived device token the background recap
+   * worker needs to reach the backend while the app is closed.
+   */
+  @ReactMethod
+  fun setRecapAuth(apiBaseUrl: String, deviceToken: String, promise: Promise) {
+    try {
+      AutoReplyStore.prefs(reactApplicationContext).edit()
+        .putString(AutoReplyStore.KEY_API_BASE, apiBaseUrl)
+        .putString(AutoReplyStore.KEY_DEVICE_TOKEN, deviceToken)
+        .apply()
+      promise.resolve(true)
+    } catch (e: Exception) {
+      promise.reject("RECAP_AUTH_ERROR", e.message, e)
     }
   }
 }

@@ -11,6 +11,8 @@
     <!-- Missed-call auto-reply. -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.SEND_SMS" />
+    <!-- Background post-call recap worker runs as a short foreground service. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- KM-traveled tracking (Phase 7): foreground GPS while the app is open. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -45,5 +47,9 @@
             <action android:name="android.intent.action.PHONE_STATE" />
         </intent-filter>
       </receiver>
+
+      <service
+        android:name="com.yesboss.autoreply.RecapService"
+        android:exported="false" />
     </application>
 </manifest>

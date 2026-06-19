@@ -7,7 +7,10 @@ interface AutoReplyNative {
     message: string;
     signature: string;
     cooldownMinutes: number;
+    recapEnabled: boolean;
+    recapNumber: string;
   }): Promise<boolean>;
+  setRecapAuth(apiBaseUrl: string, deviceToken: string): Promise<boolean>;
 }
 
 const { AutoReply } = NativeModules as { AutoReply?: AutoReplyNative };
@@ -40,5 +43,19 @@ export async function pushAutoReplyConfig(config: AutoReplyConfig): Promise<void
     message: config.message,
     signature: config.signature,
     cooldownMinutes: config.cooldownMinutes,
+    recapEnabled: config.recapEnabled,
+    recapNumber: config.recapNumber,
   });
+}
+
+/**
+ * Hand the background recap worker what it needs to reach the backend while the
+ * app is closed: the API base URL and a long-lived device token.
+ */
+export async function pushRecapAuth(
+  apiBaseUrl: string,
+  deviceToken: string,
+): Promise<void> {
+  if (!AutoReply) return;
+  await AutoReply.setRecapAuth(apiBaseUrl, deviceToken);
 }

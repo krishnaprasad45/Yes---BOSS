@@ -40,6 +40,100 @@ class AutoReplyReceiver : BroadcastReceiver() {
     // broadcast; give it a moment before reading.
     Thread.sleep(1500)
     onMissedCall(context)
+    maybeStartRecap(context)
+  }
+
+  /**
+   * If the just-ended call was an answered call with a saved contact, kick off
+   * the background recap worker (which finds the recording, uploads it, and
+   * texts the owner a summary). Saved-contact + answered only, de-duped per call.
+   */
+  private fun maybeStartRecap(context: Context) {
+    val prefs = AutoReplyStore.prefs(context)
+    if (!prefs.getBoolean(AutoReplyStore.KEY_RECAP_ENABLED, false)) return
+
+    val number = prefs.getString(AutoReplyStore.KEY_RECAP_NUMBER, "") ?: ""
+    val apiBase = prefs.getString(AutoReplyStore.KEY_API_BASE, "") ?: ""
+    val token = prefs.getString(AutoReplyStore.KEY_DEVICE_TOKEN, "") ?: ""
+    if (number.isBlank() || apiBase.isBlank() || token.isBlank()) {
+      Log.i(TAG, "recap not fully configured — skipping")
+      return
+    }
+
+    val call = latestCompletedCall(context) ?: return
+
+    val dedupeKey = AutoReplyStore.recappedKey(call.number, call.occurredAtMs)
+    if (prefs.getBoolean(dedupeKey, false)) {
+      Log.i(TAG, "call already recapped — skipping")
+      return
+    }
+    prefs.edit().putBoolean(dedupeKey, true).apply()
+
+    Log.i(TAG, "starting recap for ${call.contactName}")
+    val intent = Intent(context, RecapService::class.java).apply {
+      putExtra("phoneNumber", call.number)
+      putExtra("contactName", call.contactName)
+      putExtra("direction", call.direction)
+      putExtra("durationSec", call.durationSec)
+      putExtra("occurredAtMs", call.occurredAtMs)
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      context.startForegroundService(intent)
+    } else {
+      context.startService(intent)
+    }
+  }
+
+  private data class CompletedCall(
+    val number: String,
+    val contactName: String,
+    val direction: String,
+    val durationSec: Int,
+    val occurredAtMs: Long,
+  )
+
+  /**
+   * Newest answered call (incoming/outgoing, duration > 0) with a saved contact
+   * name, within the last 2 minutes. Returns null for missed/rejected/unknown.
+   */
+  private fun latestCompletedCall(context: Context): CompletedCall? {
+    return try {
+      context.contentResolver.query(
+        CallLog.Calls.CONTENT_URI,
+        arrayOf(
+          CallLog.Calls.NUMBER,
+          CallLog.Calls.CACHED_NAME,
+          CallLog.Calls.TYPE,
+          CallLog.Calls.DURATION,
+          CallLog.Calls.DATE,
+        ),
+        null,
+        null,
+        "${CallLog.Calls.DATE} DESC LIMIT 1",
+      ).use { c ->
+        if (c == null || !c.moveToFirst()) return null
+        val number = c.getString(c.getColumnIndexOrThrow(CallLog.Calls.NUMBER))
+        val name = c.getString(c.getColumnIndexOrThrow(CallLog.Calls.CACHED_NAME))
+        val type = c.getInt(c.getColumnIndexOrThrow(CallLog.Calls.TYPE))
+        val duration = c.getInt(c.getColumnIndexOrThrow(CallLog.Calls.DURATION))
+        val date = c.getLong(c.getColumnIndexOrThrow(CallLog.Calls.DATE))
+
+        val direction = when (type) {
+          CallLog.Calls.INCOMING_TYPE -> "incoming"
+          CallLog.Calls.OUTGOING_TYPE -> "outgoing"
+          else -> return null // missed / rejected / voicemail — no recap
+        }
+        if (duration <= 0) return null // not actually answered
+        if (name.isNullOrBlank()) return null // saved contacts only
+        if (number.isNullOrBlank()) return null
+        if (System.currentTimeMillis() - date > 120_000L) return null // stale
+
+        CompletedCall(number, name, direction, duration, date)
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, "completed-call lookup failed: ${e.message}")
+      null
+    }
   }
 
   private fun onMissedCall(context: Context) {
