@@ -267,6 +267,13 @@ After a completed call **with a saved contact**, generate a recap:
       classified by the LLM (Friendly/Formal/Fun/Casual/Tense/Neutral). De-duped
       per call; saved-contacts only. Owner received the recap SMS on a real call.
 - [x] Optional `WHISPER_LANGUAGE` hint added (fixes short-clip misdetection).
+- [x] **Smart send mode — device-verified.** Recap classifies tone (12-way) and
+      extracts actionable entities (dates / amounts / phones / follow-ups). In
+      Smart mode it auto-sends only when the call is actionable, otherwise parks
+      an **editable preview** (notification Send/Discard + tap-to-edit bottom
+      sheet) — modes: smart | always_send | always_ask. Verified live: an
+      incoming call mentioning "July 15" + "5K" auto-texted the owner a recap
+      with a 📅/💰 action block.
 - [ ] Recap-to-contact delivery (opt-in, off by default) + WhatsApp/email
       channels — still deferred. Self-recap via SMS is live.
 
