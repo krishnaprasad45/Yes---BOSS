@@ -21,7 +21,7 @@ model AutoReplyConfig {
   id              String   @id @default(uuid())
   userId          String   @unique
   enabled         Boolean  @default(false)
-  message         String   @default("Sorry, I missed your call. I'll get back to you shortly.")
+  message         String   @default("Hi! I can't take your call right now. Please drop me a text and I'll get back to you as soon as I'm free.")
   signature       String   @default("— AI Assistant")
   // Don't auto-reply to the same number more than once per this many minutes.
   cooldownMinutes Int      @default(60)

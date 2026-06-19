@@ -88,14 +88,21 @@ class AutoReplyReceiver : BroadcastReceiver() {
     }
   }
 
-  /** Newest MISSED call within the last 2 minutes (the one that just happened). */
+  /**
+   * Newest unanswered incoming call within the last 2 minutes (the one that just
+   * happened). Counts both MISSED (rang out) and REJECTED — declining/cutting an
+   * incoming call logs as REJECTED_TYPE on Android 7+, so we reply to those too.
+   */
   private fun latestMissedNumber(context: Context): String? {
     return try {
       context.contentResolver.query(
         CallLog.Calls.CONTENT_URI,
         arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DATE),
-        "${CallLog.Calls.TYPE} = ?",
-        arrayOf(CallLog.Calls.MISSED_TYPE.toString()),
+        "${CallLog.Calls.TYPE} IN (?, ?)",
+        arrayOf(
+          CallLog.Calls.MISSED_TYPE.toString(),
+          CallLog.Calls.REJECTED_TYPE.toString(),
+        ),
         "${CallLog.Calls.DATE} DESC LIMIT 1",
       ).use { c ->
         if (c == null || !c.moveToFirst()) return null

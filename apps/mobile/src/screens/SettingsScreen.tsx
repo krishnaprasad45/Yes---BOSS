@@ -80,7 +80,7 @@ export function SettingsScreen() {
             value={message}
             onChangeText={setMessage}
             multiline
-            placeholder="Sorry, I missed your call…"
+            placeholder="Hi! I can't take your call right now…"
             placeholderTextColor={colors.textFaint}
           />
 
