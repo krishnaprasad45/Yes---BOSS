@@ -2,6 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { Call } from "@yes-boss/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { StorageService } from "../storage/storage.service";
+import { CallService } from "../call/call.service";
+import type { UploadCallDto } from "../call/dto";
 import { TranscriptionService } from "./transcription.service";
 import { SummaryService } from "./summary.service";
 
@@ -10,9 +12,74 @@ export class RecapService {
   constructor(
     private prisma: PrismaService,
     private storage: StorageService,
+    private calls: CallService,
     private transcription: TranscriptionService,
     private summary: SummaryService,
   ) {}
+
+  /**
+   * Background flow: device uploads a just-ended recorded call, we transcribe +
+   * summarize it and return a ready-to-send SMS recap body. The phone (which
+   * holds the SIM) sends the SMS to the owner. Saved-contact calls only — the
+   * device gates that before calling here.
+   */
+  async autoRecap(
+    meta: UploadCallDto,
+    file: { buffer: Buffer; mimetype: string; originalname: string },
+  ): Promise<{ smsBody: string }> {
+    if (!this.transcription.isConfigured() || !this.summary.isConfigured()) {
+      throw new BadRequestException("Recap providers not configured");
+    }
+
+    // Store the recording + upsert the call row (reuses the backup pipeline).
+    await this.calls.uploadRecording(meta, file);
+
+    const transcript = await this.transcription.transcribe(
+      file.buffer,
+      file.originalname,
+    );
+    if (!transcript.trim()) {
+      throw new BadRequestException("Empty transcript — nothing to recap");
+    }
+
+    const recap = await this.summary.summarizeRecap(transcript, {
+      contactName: meta.contactName ?? null,
+      phoneNumber: meta.phoneNumber,
+      direction: meta.direction,
+      durationSec: meta.durationSec,
+    });
+
+    // Persist transcript + summary on the call.
+    await this.prisma.call.update({
+      where: {
+        phoneNumber_occurredAt: {
+          phoneNumber: meta.phoneNumber,
+          occurredAt: new Date(meta.occurredAt),
+        },
+      },
+      data: { transcript, summary: recap.summary },
+    });
+
+    return { smsBody: this.buildSms(meta, recap.tone, recap.summary) };
+  }
+
+  private buildSms(
+    meta: UploadCallDto,
+    tone: string,
+    summary: string,
+  ): string {
+    const name = meta.contactName?.trim() || meta.phoneNumber;
+    const dir = meta.direction.charAt(0).toUpperCase() + meta.direction.slice(1);
+    const dur = formatDuration(meta.durationSec);
+    const when = formatWhen(new Date(meta.occurredAt));
+    return (
+      `📞 Call Recap — ${name}\n` +
+      `${dir} · ${dur} · ${when}\n` +
+      `Tone: ${tone}\n\n` +
+      `${summary}\n\n` +
+      `— AI recap. AI can make mistakes; verify key details.`
+    );
+  }
 
   /** Whether both halves of the pipeline are configured. */
   status(): { transcription: boolean; summary: boolean } {
@@ -79,4 +146,21 @@ export class RecapService {
       updatedAt: updated.updatedAt.toISOString(),
     };
   }
+}
+
+function formatDuration(sec: number): string {
+  if (sec <= 0) return "0s";
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function formatWhen(d: Date): string {
+  const day = d.getDate();
+  const month = d.toLocaleString("en-US", { month: "short" });
+  let h = d.getHours();
+  const min = d.getMinutes().toString().padStart(2, "0");
+  const period = h < 12 ? "am" : "pm";
+  h = h % 12 === 0 ? 12 : h % 12;
+  return `${day} ${month}, ${h}:${min}${period}`;
 }

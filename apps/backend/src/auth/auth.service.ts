@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
+import { JwtService, type JwtSignOptions } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "crypto";
 import type { AuthTokens, AuthUser } from "@yes-boss/shared";
@@ -39,6 +39,22 @@ export class AuthService {
     }
     await this.prisma.refreshToken.delete({ where: { id: stored.id } });
     return this.issueTokens(stored.user.id, stored.user.email);
+  }
+
+  /**
+   * Long-lived token for the background recap worker, which must call the API
+   * while the app is closed (no interactive refresh available). Same secret as
+   * the access token, so the normal JwtAuthGuard accepts it — just a longer TTL.
+   */
+  async issueDeviceToken(userId: string, email: string): Promise<{ deviceToken: string }> {
+    const deviceToken = await this.jwt.signAsync(
+      { sub: userId, email, device: true },
+      {
+        expiresIn: (process.env.DEVICE_TOKEN_TTL ??
+          "90d") as JwtSignOptions["expiresIn"],
+      },
+    );
+    return { deviceToken };
   }
 
   private async issueTokens(userId: string, email: string): Promise<AuthTokens> {

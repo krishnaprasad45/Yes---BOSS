@@ -20,4 +20,13 @@ export class UpdateAutoReplyDto {
   @Min(0)
   @Max(1440)
   cooldownMinutes?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  recapEnabled?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  recapNumber?: string;
 }

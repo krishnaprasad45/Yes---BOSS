@@ -14,6 +14,23 @@ const SYSTEM_PROMPT =
   "points for key details, decisions, and any action items / follow-ups. " +
   "Be factual; do not invent details not in the transcript.";
 
+const TONES = ["Friendly", "Formal", "Fun", "Casual", "Tense", "Neutral"] as const;
+export type ConversationTone = (typeof TONES)[number];
+
+export interface RecapResult {
+  tone: ConversationTone;
+  summary: string;
+}
+
+const RECAP_SYSTEM_PROMPT =
+  "You summarize phone-call transcripts for the call's owner, for an SMS recap. " +
+  "Classify the conversation tone as exactly one of: " +
+  TONES.join(", ") +
+  ". Then write a very short recap: one line on the matter of the call, then " +
+  "1-3 short bullet points (key details / decisions / action items). Keep the " +
+  "whole summary under ~350 characters so it fits a text message. Be factual; " +
+  'do not invent details. Respond ONLY as JSON: {"tone": "...", "summary": "..."}.';
+
 /**
  * Turns a call transcript into a short "matter of the call" recap.
  *
@@ -48,15 +65,59 @@ export class SummaryService {
       `Transcript:\n${transcript}`;
 
     const text = this.useOpenAiCompat()
-      ? await this.summarizeOpenAiCompat(userMsg)
-      : await this.summarizeAnthropic(userMsg);
+      ? await this.summarizeOpenAiCompat(userMsg, SYSTEM_PROMPT, false)
+      : await this.summarizeAnthropic(userMsg, SYSTEM_PROMPT);
 
     if (!text) this.logger.warn("Empty summary returned by the model");
     return text;
   }
 
+  /**
+   * Structured recap for the auto-SMS: returns the conversation tone plus a
+   * short SMS-sized summary. Falls back to a Neutral/plain summary if the model
+   * doesn't return clean JSON.
+   */
+  async summarizeRecap(transcript: string, ctx: CallContext): Promise<RecapResult> {
+    if (!this.isConfigured()) {
+      throw new Error("Summary not configured (RECAP_API_KEY or ANTHROPIC_API_KEY)");
+    }
+    const who = ctx.contactName ?? ctx.phoneNumber;
+    const userMsg =
+      `Call with ${who} (${ctx.direction}, ${ctx.durationSec}s).\n\n` +
+      `Transcript:\n${transcript}`;
+
+    const raw = this.useOpenAiCompat()
+      ? await this.summarizeOpenAiCompat(userMsg, RECAP_SYSTEM_PROMPT, true)
+      : await this.summarizeAnthropic(userMsg, RECAP_SYSTEM_PROMPT);
+
+    return this.parseRecap(raw);
+  }
+
+  private parseRecap(raw: string): RecapResult {
+    try {
+      // Models sometimes wrap JSON in prose/fences — grab the first {...} block.
+      const match = raw.match(/\{[\s\S]*\}/);
+      const json = JSON.parse(match ? match[0] : raw) as {
+        tone?: string;
+        summary?: string;
+      };
+      const tone = (TONES as readonly string[]).includes(json.tone ?? "")
+        ? (json.tone as ConversationTone)
+        : "Neutral";
+      const summary = (json.summary ?? "").trim();
+      if (summary) return { tone, summary };
+    } catch {
+      this.logger.warn("Recap JSON parse failed; using raw text");
+    }
+    return { tone: "Neutral", summary: raw.trim() };
+  }
+
   /** OpenAI-compatible chat completions (Groq free tier by default). */
-  private async summarizeOpenAiCompat(userMsg: string): Promise<string> {
+  private async summarizeOpenAiCompat(
+    userMsg: string,
+    system: string,
+    jsonMode: boolean,
+  ): Promise<string> {
     const baseUrl = process.env.RECAP_BASE_URL as string;
     const apiKey = process.env.RECAP_API_KEY as string;
     const model = process.env.RECAP_MODEL ?? "llama-3.3-70b-versatile";
@@ -70,8 +131,9 @@ export class SummaryService {
       body: JSON.stringify({
         model,
         max_tokens: 1024,
+        ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: system },
           { role: "user", content: userMsg },
         ],
       }),
@@ -88,14 +150,14 @@ export class SummaryService {
   }
 
   /** Anthropic Claude fallback. */
-  private async summarizeAnthropic(userMsg: string): Promise<string> {
+  private async summarizeAnthropic(userMsg: string, system: string): Promise<string> {
     if (!this.client) this.client = new Anthropic(); // reads ANTHROPIC_API_KEY
     const model = process.env.RECAP_MODEL ?? "claude-opus-4-8";
 
     const response = await this.client.messages.create({
       model,
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
+      system,
       messages: [{ role: "user", content: userMsg }],
     });
 

@@ -25,6 +25,11 @@ export class TranscriptionService {
     // store can be a SharedArrayBuffer, which Blob's types reject).
     form.append("file", new Blob([new Uint8Array(audio)]), fileName);
     form.append("model", model);
+    // Optional language hint (e.g. "hi", "en"). Whisper auto-detect mislabels
+    // short/noisy clips; pinning the language keeps the transcript accurate.
+    if (process.env.WHISPER_LANGUAGE) {
+      form.append("language", process.env.WHISPER_LANGUAGE);
+    }
 
     const res = await fetch(`${baseUrl}/audio/transcriptions`, {
       method: "POST",

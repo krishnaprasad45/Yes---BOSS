@@ -25,6 +25,9 @@ model AutoReplyConfig {
   signature       String   @default("— AI Assistant")
   // Don't auto-reply to the same number more than once per this many minutes.
   cooldownMinutes Int      @default(60)
+  // Auto post-call recap: text a summary to the owner after a recorded call.
+  recapEnabled    Boolean  @default(false)
+  recapNumber     String   @default("") // owner's own number (self-recap target)
   updatedAt       DateTime @updatedAt
 }
 

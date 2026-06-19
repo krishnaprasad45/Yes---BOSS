@@ -7,5 +7,6 @@ import { CallService } from "./call.service";
   imports: [AuthModule],
   controllers: [CallController],
   providers: [CallService],
+  exports: [CallService],
 })
 export class CallModule {}

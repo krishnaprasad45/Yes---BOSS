@@ -7,10 +7,22 @@ export interface AutoReplyConfig {
   signature: string;
   /** Suppress repeat replies to the same number within this window. */
   cooldownMinutes: number;
+  /** Auto-text a post-call recap to the owner after a recorded call. */
+  recapEnabled: boolean;
+  /** Owner's own number — where the self-recap SMS is sent. */
+  recapNumber: string;
   updatedAt: string;
 }
 
 /** All fields optional — partial update of the auto-reply config. */
 export type UpdateAutoReplyConfig = Partial<
-  Pick<AutoReplyConfig, "enabled" | "message" | "signature" | "cooldownMinutes">
+  Pick<
+    AutoReplyConfig,
+    | "enabled"
+    | "message"
+    | "signature"
+    | "cooldownMinutes"
+    | "recapEnabled"
+    | "recapNumber"
+  >
 >;
