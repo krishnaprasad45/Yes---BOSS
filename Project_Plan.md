@@ -158,7 +158,7 @@ After a completed call **with a saved contact**, generate a recap:
 
 ## 6. Phased Roadmap
 
-**Overall progress: ~92%** (Phases 1, 2, 3, 5, 7 device-verified with real data — incl. live missed-call auto-reply, 514-call backup, and on-device GPS distance tracking; UI restyled to Stitch & verified on device; Phase 4 needs API keys; Phase 6 iOS needs macOS)
+**Overall progress: ~95%** (Phases 1, 2, 3, 4, 5, 7 verified with real data — incl. live missed-call auto-reply, 514-call backup, on-device GPS distance tracking, and post-call recap end-to-end on Groq's free tier; UI restyled to Stitch & verified on device; only Phase 6 iOS UI remains, blocked on macOS)
 
 | Phase | Status | % |
 |---|---|---|
@@ -166,7 +166,7 @@ After a completed call **with a saved contact**, generate a recap:
 | Phase 1 — SMS analytics | ✅ Device-verified | 100% |
 | Phase 2 — Call backup | ✅ Device-verified | 100% |
 | Phase 3 — Missed-call auto-reply | ✅ Device-verified (SMS sent on real miss) | 100% |
-| Phase 4 — Post-call recap | 🟡 Wiring done; needs API keys | 80% |
+| Phase 4 — Post-call recap | ✅ Live-verified (Groq free tier) | 95% |
 | Phase 5 — Analytics & stats | ✅ Device-verified (real data) | 100% |
 | Phase 6 — iOS client | 🟠 Backend done; iOS UI needs macOS | 50% |
 | Phase 7 — Upcoming features | ✅ Subs + peak + KM device-verified | 95% |
@@ -238,7 +238,7 @@ After a completed call **with a saved contact**, generate a recap:
       IDLE instead), and SmsManager uses `getDefault()` on API < 31 where
       `getSystemService(SmsManager)` returns null.
 
-### Phase 4 — Post-call recap (Android) 🟡 80%
+### Phase 4 — Post-call recap (Android) ✅ 95% (live-verified, Groq free tier)
 - [x] Backend RecapModule: pull recording from storage → Whisper transcription
       (ASR) → Claude summary (`claude-opus-4-8`) → persist transcript + summary
       on the Call. Idempotent (`?force=true` to redo). Both providers degrade
@@ -255,9 +255,12 @@ After a completed call **with a saved contact**, generate a recap:
       (`whisper-large-v3` + `llama-3.3-70b-versatile`) — one free key powers the
       whole pipeline, fits AWS free-tier EC2 (no on-box model hosting). See
       `.env.example`.
-- [ ] **Live verify**: drop a free Groq key into `RECAP_API_KEY` +
-      `WHISPER_API_KEY`, run a real recording through transcription + summary
-      end-to-end.
+- [x] **Live verified** (Groq free tier): ran a real call recording through the
+      full pipeline — Whisper `whisper-large-v3` transcript → Llama
+      `llama-3.3-70b-versatile` summary → persisted on the Call. Status flips
+      `{transcription:true, summary:true}`. Zero cost.
+- [ ] Language hint: Whisper auto-detect mislabeled a short Hindi clip as Urdu;
+      pass a `language` param (e.g. `hi`/`en`) to improve accuracy on short audio.
 - [ ] Self-recap / recap-to-contact delivery via WhatsApp/email (deferred).
 
 ### Phase 5 — Analytics & stats 🟡 90%
