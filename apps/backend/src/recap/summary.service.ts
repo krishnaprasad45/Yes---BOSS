@@ -14,22 +14,46 @@ const SYSTEM_PROMPT =
   "points for key details, decisions, and any action items / follow-ups. " +
   "Be factual; do not invent details not in the transcript.";
 
-const TONES = ["Friendly", "Formal", "Fun", "Casual", "Tense", "Neutral"] as const;
+const TONES = [
+  "Friendly",
+  "Formal",
+  "Fun",
+  "Casual",
+  "Tense",
+  "Urgent",
+  "Business",
+  "Personal",
+  "Negotiation",
+  "Apologetic",
+  "Angry",
+  "Neutral",
+] as const;
 export type ConversationTone = (typeof TONES)[number];
+
+/** Actionable items pulled from the call — these drive Smart auto-send. */
+export interface RecapEntities {
+  dates: string[]; // dates / times / scheduled moments ("Tomorrow 5pm")
+  amounts: string[]; // money / prices ("₹500")
+  phones: string[]; // phone numbers mentioned
+  actions: string[]; // commitments / follow-ups ("send the quote")
+}
 
 export interface RecapResult {
   tone: ConversationTone;
   summary: string;
+  entities: RecapEntities;
 }
 
 const RECAP_SYSTEM_PROMPT =
   "You summarize phone-call transcripts for the call's owner, for an SMS recap. " +
   "Classify the conversation tone as exactly one of: " +
   TONES.join(", ") +
-  ". Then write a very short recap: one line on the matter of the call, then " +
-  "1-3 short bullet points (key details / decisions / action items). Keep the " +
-  "whole summary under ~350 characters so it fits a text message. Be factual; " +
-  'do not invent details. Respond ONLY as JSON: {"tone": "...", "summary": "..."}.';
+  ". Write a very short recap: one line on the matter of the call, then 1-3 " +
+  "short bullets. Keep the summary under ~300 characters. Also extract concrete, " +
+  "actionable items mentioned in the call: dates/times, money amounts/prices, " +
+  "phone numbers, and commitments or follow-ups. Use empty arrays when none. Be " +
+  "factual; do not invent details. Respond ONLY as JSON: " +
+  '{"tone":"...","summary":"...","entities":{"dates":[],"amounts":[],"phones":[],"actions":[]}}.';
 
 /**
  * Turns a call transcript into a short "matter of the call" recap.
@@ -100,16 +124,19 @@ export class SummaryService {
       const json = JSON.parse(match ? match[0] : raw) as {
         tone?: string;
         summary?: string;
+        entities?: Partial<RecapEntities>;
       };
       const tone = (TONES as readonly string[]).includes(json.tone ?? "")
         ? (json.tone as ConversationTone)
         : "Neutral";
       const summary = (json.summary ?? "").trim();
-      if (summary) return { tone, summary };
+      if (summary) {
+        return { tone, summary, entities: cleanEntities(json.entities) };
+      }
     } catch {
       this.logger.warn("Recap JSON parse failed; using raw text");
     }
-    return { tone: "Neutral", summary: raw.trim() };
+    return { tone: "Neutral", summary: raw.trim(), entities: emptyEntities() };
   }
 
   /** OpenAI-compatible chat completions (Groq free tier by default). */
@@ -167,4 +194,31 @@ export class SummaryService {
       .join("\n")
       .trim();
   }
+}
+
+function emptyEntities(): RecapEntities {
+  return { dates: [], amounts: [], phones: [], actions: [] };
+}
+
+function cleanEntities(e?: Partial<RecapEntities>): RecapEntities {
+  const arr = (v: unknown): string[] =>
+    Array.isArray(v)
+      ? v.map((x) => String(x).trim()).filter(Boolean).slice(0, 5)
+      : [];
+  return {
+    dates: arr(e?.dates),
+    amounts: arr(e?.amounts),
+    phones: arr(e?.phones),
+    actions: arr(e?.actions),
+  };
+}
+
+/** Any concrete, actionable item present → worth auto-sending in Smart mode. */
+export function isActionable(e: RecapEntities): boolean {
+  return (
+    e.dates.length > 0 ||
+    e.amounts.length > 0 ||
+    e.phones.length > 0 ||
+    e.actions.length > 0
+  );
 }

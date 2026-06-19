@@ -94,14 +94,28 @@ class RecapService : Service() {
       return
     }
 
-    val smsBody = uploadAndGetRecap(
+    val recap = uploadAndGetRecap(
       apiBase, token, number, contactName, direction, durationSec, occurredAtMs,
       recording.name, audio,
     ) ?: return
 
-    sendSms(recapNumber, smsBody)
-    Log.i(TAG, "recap SMS sent to self")
+    val mode = prefs.getString(AutoReplyStore.KEY_RECAP_MODE, "smart") ?: "smart"
+    val send = when (mode) {
+      "always_send" -> true
+      "always_ask" -> false
+      else -> recap.actionable // "smart": only auto-send actionable recaps
+    }
+
+    if (send) {
+      sendSms(recapNumber, recap.smsBody)
+      Log.i(TAG, "recap SMS sent to self (mode=$mode, actionable=${recap.actionable})")
+    } else {
+      RecapActionReceiver.showConfirm(this, recapNumber, recap.smsBody, contactName)
+      Log.i(TAG, "recap pending confirm (mode=$mode, actionable=${recap.actionable})")
+    }
   }
+
+  private data class RecapData(val smsBody: String, val actionable: Boolean)
 
   private data class Recording(val uri: Uri, val name: String, val modifiedMs: Long)
 
@@ -153,7 +167,7 @@ class RecapService : Service() {
     occurredAtMs: Long,
     fileName: String,
     audio: ByteArray,
-  ): String? {
+  ): RecapData? {
     val boundary = "----yesboss${System.currentTimeMillis()}"
     val url = URL("${apiBase.trimEnd('/')}/calls/auto-recap")
     val conn = url.openConnection() as HttpURLConnection
@@ -196,9 +210,10 @@ class RecapService : Service() {
         Log.e(TAG, "auto-recap failed ($code): ${text.take(200)}")
         return null
       }
-      // Envelope: { data: { smsBody }, ... }
+      // Envelope: { data: { smsBody, actionable }, ... }
       val data = JSONObject(text).optJSONObject("data") ?: return null
-      return data.optString("smsBody").ifBlank { null }
+      val body = data.optString("smsBody").ifBlank { return null }
+      return RecapData(body, data.optBoolean("actionable", false))
     } finally {
       conn.disconnect()
     }

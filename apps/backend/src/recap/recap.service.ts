@@ -5,7 +5,8 @@ import { StorageService } from "../storage/storage.service";
 import { CallService } from "../call/call.service";
 import type { UploadCallDto } from "../call/dto";
 import { TranscriptionService } from "./transcription.service";
-import { SummaryService } from "./summary.service";
+import { SummaryService, isActionable } from "./summary.service";
+import type { RecapEntities } from "./summary.service";
 
 @Injectable()
 export class RecapService {
@@ -26,7 +27,7 @@ export class RecapService {
   async autoRecap(
     meta: UploadCallDto,
     file: { buffer: Buffer; mimetype: string; originalname: string },
-  ): Promise<{ smsBody: string }> {
+  ): Promise<{ smsBody: string; actionable: boolean }> {
     if (!this.transcription.isConfigured() || !this.summary.isConfigured()) {
       throw new BadRequestException("Recap providers not configured");
     }
@@ -60,23 +61,36 @@ export class RecapService {
       data: { transcript, summary: recap.summary },
     });
 
-    return { smsBody: this.buildSms(meta, recap.tone, recap.summary) };
+    return {
+      smsBody: this.buildSms(meta, recap.tone, recap.summary, recap.entities),
+      actionable: isActionable(recap.entities),
+    };
   }
 
   private buildSms(
     meta: UploadCallDto,
     tone: string,
     summary: string,
+    entities: RecapEntities,
   ): string {
     const name = meta.contactName?.trim() || meta.phoneNumber;
     const dir = meta.direction.charAt(0).toUpperCase() + meta.direction.slice(1);
     const dur = formatDuration(meta.durationSec);
     const when = formatWhen(new Date(meta.occurredAt));
+
+    // Scannable actionable block — only the lines that have content.
+    const lines: string[] = [];
+    for (const d of entities.dates) lines.push(`📅 ${d}`);
+    for (const a of entities.amounts) lines.push(`💰 ${a}`);
+    for (const p of entities.phones) lines.push(`☎ ${p}`);
+    for (const act of entities.actions) lines.push(`✅ ${act}`);
+    const actionBlock = lines.length ? `\n${lines.join("\n")}` : "";
+
     return (
       `📞 Call Recap — ${name}\n` +
       `${dir} · ${dur} · ${when}\n` +
       `Tone: ${tone}\n\n` +
-      `${summary}\n\n` +
+      `${summary}${actionBlock}\n\n` +
       `— AI recap. AI can make mistakes; verify key details.`
     );
   }

@@ -14,6 +14,7 @@ object AutoReplyStore {
   // Auto post-call recap (self-recap SMS).
   const val KEY_RECAP_ENABLED = "recap_enabled"
   const val KEY_RECAP_NUMBER = "recap_number"
+  const val KEY_RECAP_MODE = "recap_mode" // smart | always_send | always_ask
   const val KEY_API_BASE = "api_base_url"
   const val KEY_DEVICE_TOKEN = "device_token"
 

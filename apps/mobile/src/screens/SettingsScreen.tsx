@@ -10,10 +10,24 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import type { RecapMode } from '@yes-boss/shared';
 import { useAutoReply } from '@/hooks/useAutoReply';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
 import { colors, font, radius, spacing } from '@/theme/theme';
 import { Badge, Card, IconTile, PrimaryButton, SectionHeader } from '@/components/ui';
+
+const RECAP_MODES: { key: RecapMode; label: string }[] = [
+  { key: 'smart', label: 'Smart' },
+  { key: 'always_send', label: 'Always' },
+  { key: 'always_ask', label: 'Ask' },
+];
+
+const RECAP_MODE_HINT: Record<RecapMode, string> = {
+  smart:
+    'Auto-sends only when the call has something actionable (date, time, number, price, follow-up). Otherwise asks first.',
+  always_send: 'Sends a recap SMS after every recorded call.',
+  always_ask: 'Never auto-sends — you confirm each recap from a notification.',
+};
 
 /** Assistant settings — missed-call auto-reply (Phase 3). */
 export function SettingsScreen() {
@@ -26,6 +40,7 @@ export function SettingsScreen() {
   const [cooldown, setCooldown] = useState('60');
   const [recapEnabled, setRecapEnabled] = useState(false);
   const [recapNumber, setRecapNumber] = useState('');
+  const [recapMode, setRecapMode] = useState<RecapMode>('smart');
 
   useEffect(() => {
     if (!config) return;
@@ -35,6 +50,7 @@ export function SettingsScreen() {
     setCooldown(String(config.cooldownMinutes));
     setRecapEnabled(config.recapEnabled);
     setRecapNumber(config.recapNumber);
+    setRecapMode(config.recapMode);
   }, [config]);
 
   if (isLoading) {
@@ -54,6 +70,7 @@ export function SettingsScreen() {
       cooldownMinutes: Number.isFinite(mins) ? mins : 60,
       recapEnabled,
       recapNumber: recapNumber.trim(),
+      recapMode,
     });
   };
 
@@ -162,10 +179,22 @@ export function SettingsScreen() {
             placeholder="+91…"
             placeholderTextColor={colors.textFaint}
           />
-          <Text style={styles.hint}>
-            After a recorded call with a saved contact, you'll get an SMS recap —
-            heading, tone, summary. Recorded calls only.
-          </Text>
+
+          <Text style={styles.label}>When to send</Text>
+          <View style={styles.modeRow}>
+            {RECAP_MODES.map(m => (
+              <TouchableOpacity
+                key={m.key}
+                style={[styles.modeChip, recapMode === m.key && styles.modeChipActive]}
+                onPress={() => setRecapMode(m.key)}>
+                <Text
+                  style={[styles.modeChipText, recapMode === m.key && styles.modeChipTextActive]}>
+                  {m.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.hint}>{RECAP_MODE_HINT[recapMode]}</Text>
         </Card>
 
         {/* Active channels (status only for now). */}
@@ -214,6 +243,19 @@ const styles = StyleSheet.create({
   },
   multiline: { minHeight: 80, textAlignVertical: 'top' },
   hint: { fontSize: font.size.xs, color: colors.textFaint, marginTop: 2 },
+  modeRow: { flexDirection: 'row', gap: spacing.sm },
+  modeChip: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: radius.md,
+    backgroundColor: colors.cardAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modeChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  modeChipText: { fontSize: font.size.sm, fontWeight: '600', color: colors.textMuted },
+  modeChipTextActive: { color: '#fff' },
   choice: {
     flexDirection: 'row',
     alignItems: 'center',

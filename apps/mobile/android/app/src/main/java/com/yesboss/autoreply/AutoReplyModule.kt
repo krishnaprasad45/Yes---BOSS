@@ -44,6 +44,10 @@ class AutoReplyModule(reactContext: ReactApplicationContext) :
           AutoReplyStore.KEY_RECAP_NUMBER,
           if (config.hasKey("recapNumber")) config.getString("recapNumber") else "",
         )
+        .putString(
+          AutoReplyStore.KEY_RECAP_MODE,
+          if (config.hasKey("recapMode")) config.getString("recapMode") else "smart",
+        )
         .apply()
       promise.resolve(true)
     } catch (e: Exception) {

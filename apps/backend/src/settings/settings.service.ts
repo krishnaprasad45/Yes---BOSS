@@ -36,6 +36,7 @@ export class SettingsService {
     cooldownMinutes: number;
     recapEnabled: boolean;
     recapNumber: string;
+    recapMode: string;
     updatedAt: Date;
   }): AutoReplyConfig {
     return {
@@ -45,6 +46,7 @@ export class SettingsService {
       cooldownMinutes: row.cooldownMinutes,
       recapEnabled: row.recapEnabled,
       recapNumber: row.recapNumber,
+      recapMode: row.recapMode as AutoReplyConfig["recapMode"],
       updatedAt: row.updatedAt.toISOString(),
     };
   }

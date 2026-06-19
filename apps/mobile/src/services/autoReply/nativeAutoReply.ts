@@ -9,6 +9,7 @@ interface AutoReplyNative {
     cooldownMinutes: number;
     recapEnabled: boolean;
     recapNumber: string;
+    recapMode: string;
   }): Promise<boolean>;
   setRecapAuth(apiBaseUrl: string, deviceToken: string): Promise<boolean>;
 }
@@ -45,6 +46,7 @@ export async function pushAutoReplyConfig(config: AutoReplyConfig): Promise<void
     cooldownMinutes: config.cooldownMinutes,
     recapEnabled: config.recapEnabled,
     recapNumber: config.recapNumber,
+    recapMode: config.recapMode,
   });
 }
 

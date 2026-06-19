@@ -11,8 +11,18 @@ export interface AutoReplyConfig {
   recapEnabled: boolean;
   /** Owner's own number — where the self-recap SMS is sent. */
   recapNumber: string;
+  /**
+   * When to send the recap SMS:
+   * - "smart": auto-send only when the call has actionable items (date / time /
+   *   number / price / follow-up); otherwise ask via a notification.
+   * - "always_send": send every recap automatically.
+   * - "always_ask": never auto-send; always confirm via a notification.
+   */
+  recapMode: RecapMode;
   updatedAt: string;
 }
+
+export type RecapMode = "smart" | "always_send" | "always_ask";
 
 /** All fields optional — partial update of the auto-reply config. */
 export type UpdateAutoReplyConfig = Partial<
@@ -24,5 +34,6 @@ export type UpdateAutoReplyConfig = Partial<
     | "cooldownMinutes"
     | "recapEnabled"
     | "recapNumber"
+    | "recapMode"
   >
 >;

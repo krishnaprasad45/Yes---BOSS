@@ -1,4 +1,7 @@
-import { IsBoolean, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import type { RecapMode } from "@yes-boss/shared";
+
+const RECAP_MODES: RecapMode[] = ["smart", "always_send", "always_ask"];
 
 export class UpdateAutoReplyDto {
   @IsOptional()
@@ -29,4 +32,8 @@ export class UpdateAutoReplyDto {
   @IsString()
   @MaxLength(20)
   recapNumber?: string;
+
+  @IsOptional()
+  @IsIn(RECAP_MODES)
+  recapMode?: RecapMode;
 }
