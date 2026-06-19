@@ -259,9 +259,16 @@ After a completed call **with a saved contact**, generate a recap:
       full pipeline — Whisper `whisper-large-v3` transcript → Llama
       `llama-3.3-70b-versatile` summary → persisted on the Call. Status flips
       `{transcription:true, summary:true}`. Zero cost.
-- [ ] Language hint: Whisper auto-detect mislabeled a short Hindi clip as Urdu;
-      pass a `language` param (e.g. `hi`/`en`) to improve accuracy on short audio.
-- [ ] Self-recap / recap-to-contact delivery via WhatsApp/email (deferred).
+- [x] **Auto self-recap on call-end — device-verified.** After an answered,
+      saved-contact call, a background foreground-service finds the recording,
+      uploads it (`POST /calls/auto-recap`, authed with a 90d device token),
+      gets back an SMS body (heading · direction/duration/time · tone · short
+      summary · "AI can make mistakes" footer) and texts it to the owner. Tone
+      classified by the LLM (Friendly/Formal/Fun/Casual/Tense/Neutral). De-duped
+      per call; saved-contacts only. Owner received the recap SMS on a real call.
+- [x] Optional `WHISPER_LANGUAGE` hint added (fixes short-clip misdetection).
+- [ ] Recap-to-contact delivery (opt-in, off by default) + WhatsApp/email
+      channels — still deferred. Self-recap via SMS is live.
 
 ### Phase 5 — Analytics & stats 🟡 90%
 - [x] Backend StatsModule: GET /stats/overview (call stats — counts by
