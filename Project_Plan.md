@@ -158,7 +158,7 @@ After a completed call **with a saved contact**, generate a recap:
 
 ## 6. Phased Roadmap
 
-**Overall progress: ~95%** (Phases 1, 2, 3, 4, 5, 7 verified with real data — incl. live missed-call auto-reply, 514-call backup, on-device GPS distance tracking, and post-call recap end-to-end on Groq's free tier; UI restyled to Stitch & verified on device; only Phase 6 iOS UI remains, blocked on macOS)
+**Overall progress: ~96%** (Phases 1, 2, 3, 4, 5, 7 verified with real data — incl. live missed-call auto-reply, 514-call backup, on-device GPS distance tracking, and the full post-call recap suite on Groq's free tier: auto self-recap, Smart actionable-gating with 12-way tone + entity extraction, editable preview, and opt-in caller summary; UI restyled to Stitch & verified on device; only Phase 6 iOS UI remains, blocked on macOS)
 
 | Phase | Status | % |
 |---|---|---|
@@ -166,7 +166,7 @@ After a completed call **with a saved contact**, generate a recap:
 | Phase 1 — SMS analytics | ✅ Device-verified | 100% |
 | Phase 2 — Call backup | ✅ Device-verified | 100% |
 | Phase 3 — Missed-call auto-reply | ✅ Device-verified (SMS sent on real miss) | 100% |
-| Phase 4 — Post-call recap | ✅ Live-verified (Groq free tier) | 95% |
+| Phase 4 — Post-call recap | ✅ Live-verified (Groq free tier) | 100% |
 | Phase 5 — Analytics & stats | ✅ Device-verified (real data) | 100% |
 | Phase 6 — iOS client | 🟠 Backend done; iOS UI needs macOS | 50% |
 | Phase 7 — Upcoming features | ✅ Subs + peak + KM device-verified | 95% |
@@ -238,7 +238,7 @@ After a completed call **with a saved contact**, generate a recap:
       IDLE instead), and SmsManager uses `getDefault()` on API < 31 where
       `getSystemService(SmsManager)` returns null.
 
-### Phase 4 — Post-call recap (Android) ✅ 95% (live-verified, Groq free tier)
+### Phase 4 — Post-call recap (Android) ✅ 100% (live-verified, Groq free tier)
 - [x] Backend RecapModule: pull recording from storage → Whisper transcription
       (ASR) → Claude summary (`claude-opus-4-8`) → persist transcript + summary
       on the Call. Idempotent (`?force=true` to redo). Both providers degrade
@@ -268,14 +268,20 @@ After a completed call **with a saved contact**, generate a recap:
       per call; saved-contacts only. Owner received the recap SMS on a real call.
 - [x] Optional `WHISPER_LANGUAGE` hint added (fixes short-clip misdetection).
 - [x] **Smart send mode — device-verified.** Recap classifies tone (12-way) and
-      extracts actionable entities (dates / amounts / phones / follow-ups). In
-      Smart mode it auto-sends only when the call is actionable, otherwise parks
-      an **editable preview** (notification Send/Discard + tap-to-edit bottom
-      sheet) — modes: smart | always_send | always_ask. Verified live: an
-      incoming call mentioning "July 15" + "5K" auto-texted the owner a recap
-      with a 📅/💰 action block.
-- [ ] Recap-to-contact delivery (opt-in, off by default) + WhatsApp/email
-      channels — still deferred. Self-recap via SMS is live.
+      extracts actionable entities (dates / amounts / item lists / phones /
+      follow-ups). In Smart mode it auto-sends only when the call is actionable,
+      otherwise parks an **editable preview** — notification Send/Discard +
+      tap-to-edit bottom sheet (device-verified) — modes: smart | always_send |
+      always_ask. Verified live: an incoming call mentioning "July 15" + "5K"
+      auto-texted the owner a recap with a 📅/💰 action block.
+- [x] **Recap-to-contact — built (opt-in, off by default).** When enabled and
+      the call has concrete items, the device also texts the **caller** a short
+      confirmation (📅/💰/🧾/✅ + "please confirm") — hard-gated on actionability,
+      casual calls send nothing. Backend returns `contactSmsBody`; native sends
+      to the caller's number. On-device toggle + persistence verified; the live
+      caller-SMS send is the owner's to trigger (texts a third party).
+- [ ] WhatsApp/email recap channels — still deferred (SMS is live for both
+      self-recap and caller summary).
 
 ### Phase 5 — Analytics & stats 🟡 90%
 - [x] Backend StatsModule: GET /stats/overview (call stats — counts by
