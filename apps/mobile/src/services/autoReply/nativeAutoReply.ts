@@ -10,6 +10,7 @@ interface AutoReplyNative {
     recapEnabled: boolean;
     recapNumber: string;
     recapMode: string;
+    callerSummaryEnabled: boolean;
   }): Promise<boolean>;
   setRecapAuth(apiBaseUrl: string, deviceToken: string): Promise<boolean>;
   getPendingRecaps(): Promise<PendingRecap[]>;
@@ -58,6 +59,7 @@ export async function pushAutoReplyConfig(config: AutoReplyConfig): Promise<void
     recapEnabled: config.recapEnabled,
     recapNumber: config.recapNumber,
     recapMode: config.recapMode,
+    callerSummaryEnabled: config.callerSummaryEnabled,
   });
 }
 

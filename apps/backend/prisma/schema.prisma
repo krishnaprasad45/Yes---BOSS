@@ -29,6 +29,8 @@ model AutoReplyConfig {
   recapEnabled    Boolean  @default(false)
   recapNumber     String   @default("") // owner's own number (self-recap target)
   recapMode       String   @default("smart") // smart | always_send | always_ask
+  // Also text the caller a summary when the call has concrete items. Opt-in.
+  callerSummaryEnabled Boolean @default(false)
   updatedAt       DateTime @updatedAt
 }
 

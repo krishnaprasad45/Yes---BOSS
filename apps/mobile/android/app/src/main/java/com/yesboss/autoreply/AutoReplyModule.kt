@@ -50,6 +50,10 @@ class AutoReplyModule(reactContext: ReactApplicationContext) :
           AutoReplyStore.KEY_RECAP_MODE,
           if (config.hasKey("recapMode")) config.getString("recapMode") else "smart",
         )
+        .putBoolean(
+          AutoReplyStore.KEY_CALLER_SUMMARY,
+          if (config.hasKey("callerSummaryEnabled")) config.getBoolean("callerSummaryEnabled") else false,
+        )
         .apply()
       promise.resolve(true)
     } catch (e: Exception) {

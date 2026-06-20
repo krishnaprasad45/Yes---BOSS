@@ -36,4 +36,8 @@ export class UpdateAutoReplyDto {
   @IsOptional()
   @IsIn(RECAP_MODES)
   recapMode?: RecapMode;
+
+  @IsOptional()
+  @IsBoolean()
+  callerSummaryEnabled?: boolean;
 }

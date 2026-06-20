@@ -41,6 +41,7 @@ export function SettingsScreen() {
   const [recapEnabled, setRecapEnabled] = useState(false);
   const [recapNumber, setRecapNumber] = useState('');
   const [recapMode, setRecapMode] = useState<RecapMode>('smart');
+  const [callerSummary, setCallerSummary] = useState(false);
 
   useEffect(() => {
     if (!config) return;
@@ -51,6 +52,7 @@ export function SettingsScreen() {
     setRecapEnabled(config.recapEnabled);
     setRecapNumber(config.recapNumber);
     setRecapMode(config.recapMode);
+    setCallerSummary(config.callerSummaryEnabled);
   }, [config]);
 
   if (isLoading) {
@@ -71,6 +73,7 @@ export function SettingsScreen() {
       recapEnabled,
       recapNumber: recapNumber.trim(),
       recapMode,
+      callerSummaryEnabled: callerSummary,
     });
   };
 
@@ -195,6 +198,27 @@ export function SettingsScreen() {
             ))}
           </View>
           <Text style={styles.hint}>{RECAP_MODE_HINT[recapMode]}</Text>
+
+          <View style={[styles.cardHead, { marginTop: spacing.md }]}>
+            <View style={styles.headLeft}>
+              <IconTile glyph="🧾" bg={colors.tileOrange} size={36} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>Also summarise to caller</Text>
+                <Text style={styles.cardSub}>Only when items are agreed</Text>
+              </View>
+            </View>
+            <Switch
+              value={callerSummary}
+              onValueChange={setCallerSummary}
+              trackColor={{ true: colors.primary, false: '#D9DBE6' }}
+              thumbColor="#fff"
+            />
+          </View>
+          <Text style={styles.hint}>
+            ⚠️ Texts the other person a short summary — but only when the call has
+            concrete items (date, price, item list, commitment). Off for casual
+            calls. They'll know you summarise calls.
+          </Text>
         </Card>
 
         {/* Active channels (status only for now). */}

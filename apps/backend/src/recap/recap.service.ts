@@ -27,7 +27,7 @@ export class RecapService {
   async autoRecap(
     meta: UploadCallDto,
     file: { buffer: Buffer; mimetype: string; originalname: string },
-  ): Promise<{ smsBody: string; actionable: boolean }> {
+  ): Promise<{ smsBody: string; actionable: boolean; contactSmsBody: string }> {
     if (!this.transcription.isConfigured() || !this.summary.isConfigured()) {
       throw new BadRequestException("Recap providers not configured");
     }
@@ -61,9 +61,13 @@ export class RecapService {
       data: { transcript, summary: recap.summary },
     });
 
+    const actionable = isActionable(recap.entities);
     return {
       smsBody: this.buildSms(meta, recap.tone, recap.summary, recap.entities),
-      actionable: isActionable(recap.entities),
+      actionable,
+      // Caller-facing confirmation — only meaningful when there are concrete
+      // items to confirm; the device sends it only if the owner opted in.
+      contactSmsBody: actionable ? this.buildContactSms(meta, recap.entities) : "",
     };
   }
 
@@ -82,6 +86,7 @@ export class RecapService {
     const lines: string[] = [];
     for (const d of entities.dates) lines.push(`📅 ${d}`);
     for (const a of entities.amounts) lines.push(`💰 ${a}`);
+    for (const it of entities.items) lines.push(`🧾 ${it}`);
     for (const p of entities.phones) lines.push(`☎ ${p}`);
     for (const act of entities.actions) lines.push(`✅ ${act}`);
     const actionBlock = lines.length ? `\n${lines.join("\n")}` : "";
@@ -92,6 +97,26 @@ export class RecapService {
       `Tone: ${tone}\n\n` +
       `${summary}${actionBlock}\n\n` +
       `— AI recap. AI can make mistakes; verify key details.`
+    );
+  }
+
+  /**
+   * Caller-facing confirmation of the concrete points agreed on the call. No
+   * tone/private analysis — just the items, framed as a recap to the other
+   * party. Only sent when the owner enabled caller summaries.
+   */
+  private buildContactSms(meta: UploadCallDto, entities: RecapEntities): string {
+    const lines: string[] = [];
+    for (const d of entities.dates) lines.push(`📅 ${d}`);
+    for (const a of entities.amounts) lines.push(`💰 ${a}`);
+    for (const it of entities.items) lines.push(`🧾 ${it}`);
+    for (const act of entities.actions) lines.push(`✅ ${act}`);
+
+    return (
+      `Hi, quick summary of our call:\n` +
+      `${lines.join("\n")}\n\n` +
+      `Please confirm if this looks right.\n` +
+      `— Auto-summary, sent for your reference.`
     );
   }
 

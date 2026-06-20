@@ -37,6 +37,7 @@ export class SettingsService {
     recapEnabled: boolean;
     recapNumber: string;
     recapMode: string;
+    callerSummaryEnabled: boolean;
     updatedAt: Date;
   }): AutoReplyConfig {
     return {
@@ -47,6 +48,7 @@ export class SettingsService {
       recapEnabled: row.recapEnabled,
       recapNumber: row.recapNumber,
       recapMode: row.recapMode as AutoReplyConfig["recapMode"],
+      callerSummaryEnabled: row.callerSummaryEnabled,
       updatedAt: row.updatedAt.toISOString(),
     };
   }

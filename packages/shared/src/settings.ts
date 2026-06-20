@@ -19,6 +19,12 @@ export interface AutoReplyConfig {
    * - "always_ask": never auto-send; always confirm via a notification.
    */
   recapMode: RecapMode;
+  /**
+   * Also text the OTHER PARTY a short summary — but only when the call has
+   * concrete items (date / price / item list / commitment). Off by default;
+   * privacy-sensitive. The owner's self-recap is unaffected.
+   */
+  callerSummaryEnabled: boolean;
   updatedAt: string;
 }
 
@@ -35,5 +41,6 @@ export type UpdateAutoReplyConfig = Partial<
     | "recapEnabled"
     | "recapNumber"
     | "recapMode"
+    | "callerSummaryEnabled"
   >
 >;

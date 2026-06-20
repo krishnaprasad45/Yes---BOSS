@@ -34,6 +34,7 @@ export type ConversationTone = (typeof TONES)[number];
 export interface RecapEntities {
   dates: string[]; // dates / times / scheduled moments ("Tomorrow 5pm")
   amounts: string[]; // money / prices ("₹500")
+  items: string[]; // goods / products / quantities ("2 chairs", "5kg rice")
   phones: string[]; // phone numbers mentioned
   actions: string[]; // commitments / follow-ups ("send the quote")
 }
@@ -51,9 +52,10 @@ const RECAP_SYSTEM_PROMPT =
   ". Write a very short recap: one line on the matter of the call, then 1-3 " +
   "short bullets. Keep the summary under ~300 characters. Also extract concrete, " +
   "actionable items mentioned in the call: dates/times, money amounts/prices, " +
-  "phone numbers, and commitments or follow-ups. Use empty arrays when none. Be " +
+  "goods/products with quantities, phone numbers, and commitments or follow-ups. " +
+  "Use empty arrays when none. Be " +
   "factual; do not invent details. Respond ONLY as JSON: " +
-  '{"tone":"...","summary":"...","entities":{"dates":[],"amounts":[],"phones":[],"actions":[]}}.';
+  '{"tone":"...","summary":"...","entities":{"dates":[],"amounts":[],"items":[],"phones":[],"actions":[]}}.';
 
 /**
  * Turns a call transcript into a short "matter of the call" recap.
@@ -197,7 +199,7 @@ export class SummaryService {
 }
 
 function emptyEntities(): RecapEntities {
-  return { dates: [], amounts: [], phones: [], actions: [] };
+  return { dates: [], amounts: [], items: [], phones: [], actions: [] };
 }
 
 function cleanEntities(e?: Partial<RecapEntities>): RecapEntities {
@@ -208,6 +210,7 @@ function cleanEntities(e?: Partial<RecapEntities>): RecapEntities {
   return {
     dates: arr(e?.dates),
     amounts: arr(e?.amounts),
+    items: arr(e?.items),
     phones: arr(e?.phones),
     actions: arr(e?.actions),
   };
@@ -218,6 +221,7 @@ export function isActionable(e: RecapEntities): boolean {
   return (
     e.dates.length > 0 ||
     e.amounts.length > 0 ||
+    e.items.length > 0 ||
     e.phones.length > 0 ||
     e.actions.length > 0
   );

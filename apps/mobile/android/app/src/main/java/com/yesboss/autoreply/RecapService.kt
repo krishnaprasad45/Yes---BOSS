@@ -113,9 +113,21 @@ class RecapService : Service() {
       RecapActionReceiver.showConfirm(this, recapNumber, recap.smsBody, contactName)
       Log.i(TAG, "recap pending confirm (mode=$mode, actionable=${recap.actionable})")
     }
+
+    // Opt-in: text the CALLER a confirmation, but only when the call had
+    // concrete items (actionable) and the owner enabled caller summaries.
+    val callerSummary = prefs.getBoolean(AutoReplyStore.KEY_CALLER_SUMMARY, false)
+    if (callerSummary && recap.actionable && recap.contactSmsBody.isNotBlank()) {
+      sendSms(number, recap.contactSmsBody)
+      Log.i(TAG, "caller summary sent to $number")
+    }
   }
 
-  private data class RecapData(val smsBody: String, val actionable: Boolean)
+  private data class RecapData(
+    val smsBody: String,
+    val actionable: Boolean,
+    val contactSmsBody: String,
+  )
 
   private data class Recording(val uri: Uri, val name: String, val modifiedMs: Long)
 
@@ -210,10 +222,14 @@ class RecapService : Service() {
         Log.e(TAG, "auto-recap failed ($code): ${text.take(200)}")
         return null
       }
-      // Envelope: { data: { smsBody, actionable }, ... }
+      // Envelope: { data: { smsBody, actionable, contactSmsBody }, ... }
       val data = JSONObject(text).optJSONObject("data") ?: return null
       val body = data.optString("smsBody").ifBlank { return null }
-      return RecapData(body, data.optBoolean("actionable", false))
+      return RecapData(
+        body,
+        data.optBoolean("actionable", false),
+        data.optString("contactSmsBody"),
+      )
     } finally {
       conn.disconnect()
     }
