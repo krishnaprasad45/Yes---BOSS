@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yes Boss — API Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui.css" />
+    <style>
+      :root {
+        --primary:#2563eb; --bg:#f8fafc; --card-bg:#fff; --text-main:#1e293b;
+        --text-muted:#64748b; --online:#10b981; --offline:#94a3b8; --border:#e2e8f0;
+      }
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { font-family:system-ui,sans-serif; background:var(--bg); color:var(--text-main); min-height:100vh; }
+      .dashboard { max-width:1200px; margin:0 auto; padding:60px 24px; }
+      header { margin-bottom:48px; }
+      header h1 { font-size:32px; font-weight:700; color:#0f172a; margin-bottom:12px; }
+      header p { color:var(--text-muted); font-size:18px; }
+      .mode-toggle { display:inline-flex; background:#e2e8f0; border-radius:8px; padding:3px; margin-top:20px; }
+      .mode-btn { padding:8px 20px; border:none; border-radius:6px; font-size:14px; font-weight:500;
+        cursor:pointer; background:transparent; color:var(--text-muted); transition:all .2s; font-family:inherit; }
+      .mode-btn.active { background:#fff; color:var(--text-main); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+      .mode-hint { display:block; margin-top:10px; font-size:13px; color:var(--text-muted); }
+      .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:24px; }
+      .card { background:var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:28px;
+        transition:all .2s ease; cursor:pointer; display:flex; flex-direction:column; height:100%; }
+      .card:hover { transform:translateY(-4px); box-shadow:0 12px 24px -8px rgba(0,0,0,.08); border-color:var(--primary); }
+      .card.disabled { opacity:.5; cursor:not-allowed; }
+      .card.disabled:hover { transform:none; box-shadow:none; border-color:var(--border); }
+      .card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+      .card h3 { font-size:20px; font-weight:600; color:var(--primary); margin-bottom:12px; }
+      .card p { font-size:15px; line-height:1.5; color:var(--text-muted); flex-grow:1; margin-bottom:24px; }
+      .card-footer { display:flex; align-items:center; gap:12px; }
+      .port-pill { background:#f1f5f9; color:#475569; padding:4px 10px; border-radius:6px; font-size:13px; font-family:monospace; }
+      .mode-pill { padding:4px 10px; border-radius:6px; font-size:12px; font-weight:500; }
+      .mode-pill.static { background:#dbeafe; color:#1e40af; }
+      .mode-pill.live { background:#d1fae5; color:#065f46; }
+      .mode-pill.unavailable { background:#fee2e2; color:#991b1b; }
+      .health-indicator { width:10px; height:10px; border-radius:50%; background:var(--offline); }
+      .health-indicator.online { background:var(--online); box-shadow:0 0 8px var(--online); }
+      #swagger-container { display:none; }
+      .topbar { background:#1e293b; padding:12px 24px; display:flex; align-items:center;
+        justify-content:space-between; position:sticky; top:0; z-index:1000; }
+      .topbar-brand { color:#fff; font-weight:700; text-decoration:none; font-size:18px; }
+      .back-btn { color:#94a3b8; text-decoration:none; font-size:14px; cursor:pointer; }
+      .back-btn:hover { color:#fff; }
+      .service-nav { display:flex; align-items:center; gap:16px; }
+      .topbar select { background:#334155; color:#fff; border:1px solid #475569; padding:6px 12px; border-radius:6px; cursor:pointer; }
+      .topbar-mode-badge { font-size:12px; padding:4px 10px; border-radius:6px; font-weight:600; }
+      .topbar-mode-badge.static { background:#1e40af; color:#dbeafe; }
+      .topbar-mode-badge.live { background:#065f46; color:#d1fae5; }
+      #swagger-ui .topbar { display:none; }
+      .swagger-notice { padding:12px 20px; font-size:14px; text-align:center; }
+      .swagger-notice.static { background:#dbeafe; color:#1e40af; }
+      .swagger-notice.live { background:#d1fae5; color:#065f46; }
+    </style>
+  </head>
+  <body>
+    <div id="dashboard" class="dashboard">
+      <header>
+        <h1>Yes Boss — API Documentation</h1>
+        <p>Select a service to view its detailed API documentation and schemas.</p>
+        <div class="mode-toggle">
+          <button class="mode-btn active" data-mode="static" onclick="setMode('static')">Static Docs</button>
+          <button class="mode-btn" data-mode="live" onclick="setMode('live')">Live Mode</button>
+        </div>
+        <span id="mode-hint" class="mode-hint">Reading from exported specs — services don't need to be running.</span>
+      </header>
+      <div id="service-grid" class="grid"></div>
+    </div>
+
+    <div id="swagger-container">
+      <div class="topbar">
+        <div class="service-nav">
+          <a class="back-btn" onclick="showDashboard(event)">&#8592; Back to Dashboard</a>
+          <div style="width:1px; height:20px; background:#475569"></div>
+          <select id="service-selector"></select>
+          <span id="topbar-mode-badge" class="topbar-mode-badge static">STATIC</span>
+        </div>
+        <a href="/" class="topbar-brand">Yes Boss</a>
+      </div>
+      <div id="swagger-notice" class="swagger-notice static">
+        Read-only mode — showing exported API specs. Services do not need to be running.
+      </div>
+      <div id="swagger-ui"></div>
+    </div>
+
+    <script src="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui-bundle.js"></script>
+    <script>
+      const DOCS_BASE = window.location.pathname.replace(/\/$/, '') || '';
+      let currentUi = null, allServices = [], currentMode = 'static', currentSlug = null;
+
+      async function init() {
+        const res = await fetch(`${DOCS_BASE}/config`);
+        allServices = (await res.json()).services;
+        renderGrid();
+        setupSelector();
+        checkAllHealth();
+      }
+
+      function setMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+        document.getElementById('mode-hint').textContent = mode === 'static'
+          ? "Reading from exported specs — services don't need to be running."
+          : 'Connects to running services — you can "Try it out" with real requests.';
+        renderGrid();
+      }
+
+      function renderGrid() {
+        const grid = document.getElementById('service-grid');
+        grid.innerHTML = allServices.map((svc) => {
+          const available = currentMode === 'static' ? svc.hasStaticSpec : true;
+          const modePill = currentMode === 'static'
+            ? (svc.hasStaticSpec
+                ? '<span class="mode-pill static">Static spec available</span>'
+                : '<span class="mode-pill unavailable">No spec exported — run export-specs.js</span>')
+            : '<span class="mode-pill live">Live — service must be running</span>';
+          return `
+            <div class="card ${available ? '' : 'disabled'}" onclick="${available ? `openService('${svc.slug}')` : ''}">
+              <div class="card-header">
+                <h3>${svc.name}</h3>
+                <div id="health-${svc.slug}" class="health-indicator"></div>
+              </div>
+              <p>${svc.description || 'API documentation for ' + svc.name}</p>
+              <div class="card-footer">
+                <span class="port-pill">:${svc.port}</span>${modePill}
+              </div>
+            </div>`;
+        }).join('');
+      }
+
+      function setupSelector() {
+        const selector = document.getElementById('service-selector');
+        selector.innerHTML = allServices.filter((s) => !s.isHidden)
+          .map((svc) => `<option value="${svc.slug}">${svc.name}</option>`).join('');
+        selector.addEventListener('change', (e) => openService(e.target.value));
+      }
+
+      async function checkAllHealth() {
+        for (const svc of allServices) {
+          const dot = document.getElementById(`health-${svc.slug}`);
+          if (!dot) continue;
+          try {
+            const data = await (await fetch(`${DOCS_BASE}/health/${svc.slug}`)).json();
+            dot.classList.toggle('online', data.status === 'online');
+          } catch { dot.classList.remove('online'); }
+        }
+      }
+
+      function getSpecUrl(slug) {
+        return currentMode === 'static'
+          ? `${DOCS_BASE}/specs/${slug}`
+          : `${DOCS_BASE}/proxy-spec/${slug}`;
+      }
+
+      function openService(slug) {
+        currentSlug = slug;
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('swagger-container').style.display = 'block';
+        document.getElementById('service-selector').value = slug;
+
+        const badge = document.getElementById('topbar-mode-badge');
+        badge.className = `topbar-mode-badge ${currentMode}`;
+        badge.textContent = currentMode === 'static' ? 'STATIC' : 'LIVE';
+
+        const notice = document.getElementById('swagger-notice');
+        notice.className = `swagger-notice ${currentMode}`;
+        notice.textContent = currentMode === 'static'
+          ? 'Read-only mode — showing exported API specs. Services do not need to be running.'
+          : 'Live mode — connected to running service. You can "Try it out" with real requests.';
+
+        loadSwagger(slug);
+      }
+
+      function showDashboard(e) {
+        if (e) e.preventDefault();
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('swagger-container').style.display = 'none';
+        window.scrollTo(0, 0);
+      }
+
+      function loadSwagger(slug) {
+        if (currentUi) { document.getElementById('swagger-ui').innerHTML = ''; currentUi = null; }
+        currentUi = SwaggerUIBundle({
+          url: getSpecUrl(slug),
+          dom_id: '#swagger-ui',
+          deepLinking: true,
+          presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+          layout: 'BaseLayout',
+          supportedSubmitMethods: currentMode === 'static'
+            ? []
+            : ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'],
+        });
+      }
+
+      init();
+    </script>
+  </body>
+</html>

@@ -21,7 +21,9 @@
     "shared:build": "yarn workspace @yes-boss/shared build",
     "typecheck": "yarn workspace @yes-boss/shared typecheck && yarn workspace @yes-boss/backend typecheck && yarn workspace @yes-boss/mobile typecheck",
     "db:up": "docker compose up -d",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "dev:swagger": "yarn workspace @yes-boss/swagger-ui dev",
+    "swagger:export": "node apps/swagger-ui/export-specs.js"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

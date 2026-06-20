@@ -1,0 +1,14 @@
+{
+  "name": "@yes-boss/swagger-ui",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.0",
+    "@fastify/static": "^7.0.0",
+    "fastify": "^4.28.0"
+  }
+}
