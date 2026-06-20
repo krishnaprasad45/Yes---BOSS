@@ -1,0 +1,12 @@
+# Keep the build context small + the server image free of the RN app.
+**/node_modules
+apps/mobile
+**/dist
+.git
+*.apk
+**/build
+**/.gradle
+**/*.log
+**/.env
+**/.env.*
+!**/.env.production.example

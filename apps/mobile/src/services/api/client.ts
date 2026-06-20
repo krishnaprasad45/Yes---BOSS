@@ -13,9 +13,16 @@ const DEV_HOST = 'localhost'; // via adb reverse (USB)
 const API_PORT = 4000; // backend port (3000 used by another local project)
 const USE_EMULATOR = false; // set true only when running on an Android emulator
 
-export const BASE_URL = USE_EMULATOR
-  ? `http://10.0.2.2:${API_PORT}`
-  : `http://${DEV_HOST}:${API_PORT}`;
+// Production backend. Set this to your deployed HTTPS URL (no trailing slash)
+// before building a release APK for real users, e.g.
+//   'https://api.yesboss.example.com'
+// Leave '' for local dev (localhost via adb reverse / emulator). HTTPS is
+// required — Android blocks cleartext to non-local hosts by default.
+const PROD_API_URL = '';
+
+export const BASE_URL =
+  PROD_API_URL ||
+  (USE_EMULATOR ? `http://10.0.2.2:${API_PORT}` : `http://${DEV_HOST}:${API_PORT}`);
 
 export class ApiError extends Error {
   constructor(
