@@ -2,6 +2,8 @@
 **/node_modules
 apps/mobile
 **/dist
+# Stale incremental build caches make tsc skip emitting .d.ts in a clean image.
+**/*.tsbuildinfo
 .git
 *.apk
 **/build

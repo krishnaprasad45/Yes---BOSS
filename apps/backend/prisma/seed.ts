@@ -1,6 +1,8 @@
 /** Seeds the single admin user from env. Run: yarn workspace @yes-boss/backend prisma:seed */
 import { PrismaClient } from "@prisma/client";
-import * as bcrypt from "bcryptjs";
+// Default import is interop-safe under both CommonJS and ESM ts-node loaders;
+// `import * as bcrypt` puts the functions on `.default` under ESM and breaks.
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
