@@ -7,5 +7,6 @@ import { SmsTxnService } from "./sms-txn.service";
   imports: [AuthModule],
   controllers: [SmsTxnController],
   providers: [SmsTxnService],
+  exports: [SmsTxnService],
 })
 export class SmsTxnModule {}

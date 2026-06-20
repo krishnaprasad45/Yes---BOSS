@@ -10,6 +10,7 @@ import { RecapModule } from "./recap/recap.module";
 import { StatsModule } from "./stats/stats.module";
 import { MediaModule } from "./media/media.module";
 import { LocationModule } from "./location/location.module";
+import { BulkModule } from "./bulk/bulk.module";
 import { HealthController } from "./health/health.controller";
 
 @Module({
@@ -25,6 +26,7 @@ import { HealthController } from "./health/health.controller";
     StatsModule,
     MediaModule,
     LocationModule,
+    BulkModule,
   ],
   controllers: [HealthController],
 })

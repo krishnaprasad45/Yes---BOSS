@@ -50,6 +50,7 @@ async function bootstrap() {
     .addTag("[7] Media", "Photo / video backup upload & list")
     .addTag("[8] Location", "GPS point sync, distance travelled")
     .addTag("[9] Health", "Liveness & readiness probes")
+    .addTag("[10] Bulk", "One-shot offline-first hydration snapshot")
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

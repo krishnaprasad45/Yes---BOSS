@@ -1,5 +1,6 @@
 export * from "./api";
 export * from "./auth";
+export * from "./bulk";
 export * from "./call";
 export * from "./location";
 export * from "./media";
