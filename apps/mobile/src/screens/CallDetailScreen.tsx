@@ -5,13 +5,16 @@ import type { Call } from '@yes-boss/shared';
 import type { CallsStackParamList } from '@/navigation/CallsStack';
 import { useGenerateRecap, useRecapStatus } from '@/hooks/useCallRecap';
 import { formatDateTime } from '@/utils/formatters';
-import { colors, font, radius, spacing } from '@/theme/theme';
+import { font, radius, spacing } from '@/theme/theme';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import type { Palette } from '@/theme/palettes';
 import { Card, PrimaryButton, SectionHeader } from '@/components/ui';
 
 type Props = NativeStackScreenProps<CallsStackParamList, 'CallDetail'>;
 
 /** Call detail + recap (transcript & Claude summary). */
 export function CallDetailScreen({ route }: Props) {
+  const styles = useThemedStyles(makeStyles);
   const [call, setCall] = useState<Call>(route.params.call);
   const status = useRecapStatus();
   const recap = useGenerateRecap();
@@ -35,7 +38,7 @@ export function CallDetailScreen({ route }: Props) {
 
       {call.summary ? (
         <Card style={styles.card}>
-          <SectionHeader title="✨ Summary" />
+          <SectionHeader title="AI Summary" />
           <Text style={styles.body}>{call.summary}</Text>
         </Card>
       ) : null}
@@ -64,7 +67,7 @@ export function CallDetailScreen({ route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg },
   name: { fontSize: font.size.xxl, fontWeight: '700', color: colors.text },

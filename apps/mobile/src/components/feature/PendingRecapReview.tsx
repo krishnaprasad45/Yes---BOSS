@@ -15,7 +15,9 @@ import {
   sendPendingRecap,
   type PendingRecap,
 } from '@/services/autoReply/nativeAutoReply';
-import { colors, font, radius, spacing } from '@/theme/theme';
+import { font, radius, spacing } from '@/theme/theme';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import type { Palette } from '@/theme/palettes';
 
 /**
  * Surfaces recaps the Smart/Ask flow parked for review: shows the SMS body in an
@@ -24,6 +26,7 @@ import { colors, font, radius, spacing } from '@/theme/theme';
  * after tapping the "Tap to edit" notification).
  */
 export function PendingRecapReview() {
+  const styles = useThemedStyles(makeStyles);
   const [queue, setQueue] = useState<PendingRecap[]>([]);
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
@@ -108,7 +111,7 @@ export function PendingRecapReview() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: colors.bg,
@@ -136,6 +139,6 @@ const styles = StyleSheet.create({
   discard: { backgroundColor: colors.cardAlt },
   discardText: { fontSize: font.size.md, fontWeight: '700', color: colors.danger },
   send: { backgroundColor: colors.primary },
-  sendText: { fontSize: font.size.md, fontWeight: '700', color: '#fff' },
+  sendText: { fontSize: font.size.md, fontWeight: '700', color: colors.onPrimary },
   btnDisabled: { opacity: 0.5 },
 });

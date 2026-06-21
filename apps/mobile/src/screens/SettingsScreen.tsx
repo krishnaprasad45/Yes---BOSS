@@ -13,8 +13,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { RecapMode } from '@yes-boss/shared';
 import { useAutoReply } from '@/hooks/useAutoReply';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
-import { colors, font, radius, spacing } from '@/theme/theme';
+import { font, radius, spacing } from '@/theme/theme';
+import { useTheme } from '@/theme/ThemeContext';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import type { Palette } from '@/theme/palettes';
 import { Badge, Card, IconTile, PrimaryButton, SectionHeader } from '@/components/ui';
+import { FileText, Mail, MapPin, MessageSquare, Moon, ReceiptText, ShieldCheck, Sparkles, Sun } from '@/components/ui/icons';
 
 const RECAP_MODES: { key: RecapMode; label: string }[] = [
   { key: 'smart', label: 'Smart' },
@@ -31,6 +35,8 @@ const RECAP_MODE_HINT: Record<RecapMode, string> = {
 
 /** Assistant settings — missed-call auto-reply (Phase 3). */
 export function SettingsScreen() {
+  const { colors, mode, toggle: toggleTheme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { config, isLoading, save, isSaving } = useAutoReply();
   const { isTracking, pointsSynced, toggle: toggleTracking } = useLocationTracking();
 
@@ -82,11 +88,37 @@ export function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Assistant Settings</Text>
 
+        {/* Appearance — light / dark theme toggle (persisted, default dark). */}
+        <Card style={styles.card}>
+          <View style={styles.cardHead}>
+            <View style={styles.headLeft}>
+              <IconTile
+                icon={mode === 'dark' ? Moon : Sun}
+                tint={colors.iconIndigo}
+                bg={colors.tileIndigo}
+                size={40}
+              />
+              <View>
+                <Text style={styles.cardTitle}>Dark mode</Text>
+                <Text style={styles.cardSub}>
+                  {mode === 'dark' ? 'On — deep navy theme' : 'Off — light theme'}
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={mode === 'dark'}
+              onValueChange={toggleTheme}
+              trackColor={{ true: colors.primary, false: colors.cardAlt }}
+              thumbColor="#fff"
+            />
+          </View>
+        </Card>
+
         {/* Auto-Reply card */}
         <Card style={styles.card}>
           <View style={styles.cardHead}>
             <View style={styles.headLeft}>
-              <IconTile glyph="✨" bg={colors.tileIndigo} size={40} />
+              <IconTile icon={Sparkles} tint={colors.iconIndigo} bg={colors.tileIndigo} size={40} />
               <View>
                 <Text style={styles.cardTitle}>Auto-Reply</Text>
                 <Text style={styles.cardSub}>AI responses to missed calls</Text>
@@ -95,7 +127,7 @@ export function SettingsScreen() {
             <Switch
               value={enabled}
               onValueChange={setEnabled}
-              trackColor={{ true: colors.primary, false: '#D9DBE6' }}
+              trackColor={{ true: colors.primary, false: colors.cardAlt }}
               thumbColor="#fff"
             />
           </View>
@@ -135,7 +167,7 @@ export function SettingsScreen() {
         <Card style={styles.card}>
           <View style={styles.cardHead}>
             <View style={styles.headLeft}>
-              <IconTile glyph="📍" bg={colors.tileGreen} size={40} />
+              <IconTile icon={MapPin} tint={colors.iconGreen} bg={colors.tileGreen} size={40} />
               <View>
                 <Text style={styles.cardTitle}>Distance tracking</Text>
                 <Text style={styles.cardSub}>GPS while the app is open</Text>
@@ -144,7 +176,7 @@ export function SettingsScreen() {
             <Switch
               value={isTracking}
               onValueChange={toggleTracking}
-              trackColor={{ true: colors.primary, false: '#D9DBE6' }}
+              trackColor={{ true: colors.primary, false: colors.cardAlt }}
               thumbColor="#fff"
             />
           </View>
@@ -159,7 +191,7 @@ export function SettingsScreen() {
         <Card style={styles.card}>
           <View style={styles.cardHead}>
             <View style={styles.headLeft}>
-              <IconTile glyph="📝" bg={colors.tilePurple} size={40} />
+              <IconTile icon={FileText} tint={colors.iconPurple} bg={colors.tilePurple} size={40} />
               <View>
                 <Text style={styles.cardTitle}>Auto call recap</Text>
                 <Text style={styles.cardSub}>Text me a summary after a call</Text>
@@ -168,7 +200,7 @@ export function SettingsScreen() {
             <Switch
               value={recapEnabled}
               onValueChange={setRecapEnabled}
-              trackColor={{ true: colors.primary, false: '#D9DBE6' }}
+              trackColor={{ true: colors.primary, false: colors.cardAlt }}
               thumbColor="#fff"
             />
           </View>
@@ -201,7 +233,7 @@ export function SettingsScreen() {
 
           <View style={[styles.cardHead, { marginTop: spacing.md }]}>
             <View style={styles.headLeft}>
-              <IconTile glyph="🧾" bg={colors.tileOrange} size={36} />
+              <IconTile icon={ReceiptText} tint={colors.iconOrange} bg={colors.tileOrange} size={36} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>Also summarise to caller</Text>
                 <Text style={styles.cardSub}>Only when items are agreed</Text>
@@ -210,7 +242,7 @@ export function SettingsScreen() {
             <Switch
               value={callerSummary}
               onValueChange={setCallerSummary}
-              trackColor={{ true: colors.primary, false: '#D9DBE6' }}
+              trackColor={{ true: colors.primary, false: colors.cardAlt }}
               thumbColor="#fff"
             />
           </View>
@@ -226,14 +258,14 @@ export function SettingsScreen() {
           <SectionHeader title="Active channels" />
           <View style={styles.channel}>
             <View style={styles.headLeft}>
-              <IconTile glyph="💬" bg={colors.tileGreen} size={36} />
+              <IconTile icon={MessageSquare} tint={colors.iconGreen} bg={colors.tileGreen} size={36} />
               <Text style={styles.channelName}>WhatsApp</Text>
             </View>
             <Badge label="Soon" tone="neutral" />
           </View>
           <View style={styles.channel}>
             <View style={styles.headLeft}>
-              <IconTile glyph="✉️" bg={colors.tileIndigo} size={36} />
+              <IconTile icon={Mail} tint={colors.iconIndigo} bg={colors.tileIndigo} size={36} />
               <Text style={styles.channelName}>Email</Text>
             </View>
             <Badge label="Soon" tone="neutral" />
@@ -241,13 +273,16 @@ export function SettingsScreen() {
         </Card>
 
         <PrimaryButton title="Save" onPress={onSave} loading={isSaving} style={{ marginTop: spacing.xs }} />
-        <Text style={styles.footer}>🔒 Your data is encrypted in transit.</Text>
+        <View style={styles.footerRow}>
+          <ShieldCheck size={14} color={colors.textFaint} strokeWidth={2.2} />
+          <Text style={styles.footer}>Your data is encrypted in transit.</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.lg },
   title: { fontSize: font.size.xxl, fontWeight: '700', color: colors.text },
@@ -279,7 +314,7 @@ const styles = StyleSheet.create({
   },
   modeChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   modeChipText: { fontSize: font.size.sm, fontWeight: '600', color: colors.textMuted },
-  modeChipTextActive: { color: '#fff' },
+  modeChipTextActive: { color: colors.onPrimary },
   choice: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -292,8 +327,8 @@ const styles = StyleSheet.create({
   },
   choiceActive: { backgroundColor: colors.primary },
   choiceText: { fontSize: font.size.md, color: colors.text, fontWeight: '600' },
-  choiceTextActive: { fontSize: font.size.md, color: '#fff', fontWeight: '700' },
-  radioOn: { color: '#fff', fontSize: 14 },
+  choiceTextActive: { fontSize: font.size.md, color: colors.onPrimary, fontWeight: '700' },
+  radioOn: { color: colors.onPrimary, fontSize: 14 },
   radioOff: { color: colors.textFaint, fontSize: 14 },
   channel: {
     flexDirection: 'row',
@@ -302,5 +337,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   channelName: { fontSize: font.size.md, fontWeight: '600', color: colors.text },
-  footer: { textAlign: 'center', fontSize: font.size.xs, color: colors.textFaint, marginTop: spacing.sm },
+  footerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: spacing.sm },
+  footer: { fontSize: font.size.xs, color: colors.textFaint },
 });

@@ -1,16 +1,16 @@
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { DefaultTheme, NavigationContainer, type Theme } from '@react-navigation/native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  NavigationContainer,
+  type Theme,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '@/hooks/useAuth';
 import { LoginScreen } from '@/screens/LoginScreen';
 import { AppTabs } from '@/navigation/AppTabs';
-import { colors } from '@/theme/theme';
-
-const navTheme: Theme = {
-  ...DefaultTheme,
-  colors: { ...DefaultTheme.colors, background: colors.bg, primary: colors.primary },
-};
+import { useTheme } from '@/theme/ThemeContext';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -21,6 +21,20 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
   const { isAuthenticated } = useAuth();
+  const { mode, colors } = useTheme();
+
+  const base = mode === 'dark' ? DarkTheme : DefaultTheme;
+  const navTheme: Theme = {
+    ...base,
+    colors: {
+      ...base.colors,
+      background: colors.bg,
+      card: colors.card,
+      text: colors.text,
+      border: colors.border,
+      primary: colors.primary,
+    },
+  };
 
   // Restoring session from Keychain.
   if (isAuthenticated === undefined) {

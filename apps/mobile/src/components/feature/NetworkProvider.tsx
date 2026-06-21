@@ -6,7 +6,11 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchBulkData } from '@/store/bulkThunk';
 import { drainPendingOps } from '@/store/sync';
 import { setConnected } from '@/store/slices/networkSlice';
-import { colors, font } from '@/theme/theme';
+import { WifiOff } from '@/components/ui/icons';
+import { font } from '@/theme/theme';
+import { useTheme } from '@/theme/ThemeContext';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import type { Palette } from '@/theme/palettes';
 
 /**
  * Bridges device connectivity into Redux and orchestrates offline-first sync:
@@ -20,6 +24,8 @@ import { colors, font } from '@/theme/theme';
 export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
   const { isAuthenticated } = useAuth();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const isConnected = useAppSelector(state => state.network.isConnected);
 
   useEffect(() => {
@@ -43,6 +49,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     <View style={styles.flex}>
       {isConnected === false && (
         <View style={styles.banner}>
+          <WifiOff size={13} color={colors.warning} strokeWidth={2.4} />
           <Text style={styles.bannerText}>Offline — showing saved data</Text>
         </View>
       )}
@@ -51,12 +58,15 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   flex: { flex: 1 },
   banner: {
     backgroundColor: colors.warningSoft,
-    paddingVertical: 4,
+    paddingVertical: 5,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
   bannerText: { fontSize: font.size.xs, color: colors.warning, fontWeight: '600' },
-});
+  });

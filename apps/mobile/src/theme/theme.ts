@@ -1,49 +1,13 @@
 /**
  * Design tokens derived from the Google Stitch design.
- * Light theme: lavender-gray canvas, white rounded cards, indigo accent.
+ *
+ * Colors now live in `palettes.ts` (light + dark) and are served at runtime via
+ * `useTheme()` in `ThemeContext`. This static `colors` export = the dark palette
+ * and is kept only as a fallback for non-component code; UI should read
+ * `useTheme().colors` so it follows the active theme.
  */
-export const colors = {
-  // Surfaces
-  bg: '#F4F5FB', // app canvas
-  card: '#FFFFFF',
-  cardAlt: '#F7F8FC', // subtle inset (search bars, list rows)
-
-  // Brand
-  primary: '#5B5BF0', // indigo accent (buttons, active states)
-  primaryDark: '#4B45D1',
-  primarySoft: '#EDEEFE', // tinted indigo tile background
-
-  // Text
-  text: '#16172B',
-  textMuted: '#8A8FA3',
-  textFaint: '#AEB2C2',
-
-  // Status
-  success: '#16A34A',
-  successSoft: '#E5F6EC',
-  danger: '#E5484D',
-  dangerSoft: '#FCEBEC',
-  warning: '#F59E0B',
-  warningSoft: '#FEF3E2',
-
-  // Category / icon-tile tints
-  tileIndigo: '#EDEEFE',
-  tileGreen: '#E5F6EC',
-  tileOrange: '#FEF1E3',
-  tilePurple: '#F1ECFD',
-  tileTeal: '#E2F7F4',
-
-  iconIndigo: '#5B5BF0',
-  iconGreen: '#16A34A',
-  iconOrange: '#F97316',
-  iconPurple: '#7C5CF0',
-  iconTeal: '#0FB5AE',
-  iconRed: '#E5484D',
-
-  // Lines
-  border: '#ECEEF4',
-  divider: '#F0F1F6',
-} as const;
+export { dark as colors } from './palettes';
+export type { Palette } from './palettes';
 
 export const spacing = {
   xs: 4,
@@ -80,13 +44,13 @@ export const font = {
   },
 } as const;
 
-/** Soft card shadow (iOS) + elevation (Android). */
+/** Card definition on dark comes from a hairline border + a soft ambient shadow. */
 export const shadow = {
   card: {
-    shadowColor: '#1B1C3A',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    shadowColor: '#000000',
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
 } as const;

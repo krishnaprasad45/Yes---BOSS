@@ -19,8 +19,22 @@ import {
   useSubscriptions,
 } from '@/hooks/useDashboard';
 import { formatMinor } from '@/utils/formatters';
-import { colors, font, radius, spacing } from '@/theme/theme';
+import { font, radius, spacing } from '@/theme/theme';
+import { useTheme } from '@/theme/ThemeContext';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import type { Palette } from '@/theme/palettes';
 import { Card, IconTile, SectionHeader, StatCard } from '@/components/ui';
+import {
+  MapPin,
+  Phone,
+  PhoneIncoming,
+  PhoneMissed,
+  PhoneOutgoing,
+  Power,
+  ReceiptText,
+  Repeat,
+  Wallet,
+} from '@/components/ui/icons';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -45,6 +59,8 @@ function formatHour(h: number): string {
 /** Dashboard — greeting, today's overview grid, 30-day insights. */
 export function HomeScreen() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { user, logout } = useAuth();
   const overview = useDashboardStats();
   const digest = useDailyDigest();
@@ -82,7 +98,7 @@ export function HomeScreen() {
             <Text style={styles.name}>{user?.name ?? 'there'} 👋</Text>
           </View>
           <TouchableOpacity style={styles.bell} onPress={logout}>
-            <Text style={{ fontSize: 18 }}>⏻</Text>
+            <Power size={18} color={colors.textMuted} strokeWidth={2.2} />
           </TouchableOpacity>
         </View>
 
@@ -95,41 +111,40 @@ export function HomeScreen() {
             <SectionHeader title="Today's Overview" />
             <View style={styles.grid}>
               <StatCard
-                glyph="📞"
+                icon={Phone}
+                tint={colors.iconIndigo}
                 tileBg={colors.tileIndigo}
                 value={String(day.callsCount)}
                 label="Calls Today"
-                onPress={() => navigation.navigate('Calls')}
+                onPress={() => navigation.navigate('Calls', { screen: 'CallsList', params: { today: true } })}
                 accessory={
                   <View style={styles.callBreakdown}>
                     <View style={styles.breakRow}>
-                      <Text style={[styles.breakArrow, { color: colors.success }]}>{'↓︎'}</Text>
+                      <PhoneIncoming size={13} color={colors.success} strokeWidth={2.4} />
                       <Text style={styles.breakNum}>{day.incomingCount}</Text>
-                      <Text style={styles.breakTag}>In</Text>
                     </View>
                     <View style={styles.breakRow}>
-                      <Text style={[styles.breakArrow, { color: colors.primary }]}>{'↑︎'}</Text>
+                      <PhoneOutgoing size={13} color={colors.iconIndigo} strokeWidth={2.4} />
                       <Text style={styles.breakNum}>{day.outgoingCount}</Text>
-                      <Text style={styles.breakTag}>Out</Text>
                     </View>
                     <View style={styles.breakRow}>
-                      <Text style={[styles.breakArrow, { color: colors.danger }]}>{'✕︎'}</Text>
+                      <PhoneMissed size={13} color={colors.danger} strokeWidth={2.4} />
                       <Text style={styles.breakNum}>{day.missedCount}</Text>
-                      <Text style={styles.breakTag} numberOfLines={1}>Miss</Text>
                     </View>
                   </View>
                 }
               />
-              <StatCard glyph="💸" tileBg={colors.tileGreen} value={formatMinor(day.spentMinor)} label="Spent Today" />
+              <StatCard icon={Wallet} tint={colors.iconGreen} tileBg={colors.tileGreen} value={formatMinor(day.spentMinor)} label="Spent Today" />
             </View>
             <View style={styles.grid}>
               <StatCard
-                glyph="📍"
+                icon={MapPin}
+                tint={colors.iconTeal}
                 tileBg={colors.tileTeal}
                 value={distance.data ? `${distance.data.data.totalKm} km` : '—'}
                 label="Distance (30d)"
               />
-              <StatCard glyph="🧾" tileBg={colors.tileOrange} value={String(day.billsDue)} label="Bills Due" />
+              <StatCard icon={ReceiptText} tint={colors.iconOrange} tileBg={colors.tileOrange} value={String(day.billsDue)} label="Bills Due" />
             </View>
           </>
         )}
@@ -178,7 +193,7 @@ export function HomeScreen() {
             <SectionHeader title="Subscriptions detected" />
             {subscriptions.map(s => (
               <View key={s.merchant} style={styles.subRow}>
-                <IconTile glyph="🔁" bg={colors.tilePurple} size={38} />
+                <IconTile icon={Repeat} tint={colors.iconPurple} bg={colors.tilePurple} size={38} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.subName}>{s.merchant}</Text>
                   <Text style={styles.subMeta}>every {s.cadenceDays} days</Text>
@@ -205,6 +220,7 @@ export function HomeScreen() {
 }
 
 function Inline({ label, value, color }: { label: string; value: string; color?: string }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.inline}>
       <Text style={styles.inlineLabel}>{label}</Text>
@@ -215,7 +231,7 @@ function Inline({ label, value, color }: { label: string; value: string; color?:
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
   headerRow: {
@@ -236,11 +252,9 @@ const styles = StyleSheet.create({
   },
   error: { color: colors.danger, marginTop: spacing.lg },
   grid: { flexDirection: 'row', gap: spacing.md },
-  callBreakdown: { gap: 2, alignItems: 'flex-end' },
-  breakRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  breakArrow: { fontSize: font.size.sm, fontWeight: '700' },
-  breakNum: { fontSize: font.size.sm, fontWeight: '700', color: colors.text, minWidth: 12, textAlign: 'right' },
-  breakTag: { fontSize: font.size.xs, color: colors.textMuted, width: 30 },
+  callBreakdown: { gap: 5, alignItems: 'flex-end' },
+  breakRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  breakNum: { fontSize: font.size.sm, fontWeight: '700', color: colors.text, minWidth: 14, textAlign: 'right' },
   block: { gap: spacing.md },
   inlineStats: { flexDirection: 'row', gap: spacing.md },
   inline: { flex: 1, backgroundColor: colors.cardAlt, borderRadius: radius.md, padding: spacing.md },

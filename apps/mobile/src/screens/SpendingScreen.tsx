@@ -13,8 +13,12 @@ import { useSmsTxnList, useSpendingSummary } from '@/hooks/useSmsTxns';
 import { useInboxSync } from '@/hooks/useInboxSync';
 import { SmsTxnCard } from '@/components/feature/SmsTxnCard';
 import { formatMinor } from '@/utils/formatters';
-import { colors, font, radius, spacing } from '@/theme/theme';
+import { font, radius, spacing } from '@/theme/theme';
+import { useTheme } from '@/theme/ThemeContext';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import type { Palette } from '@/theme/palettes';
 import { Card, Chip, IconTile, PrimaryButton, SectionHeader } from '@/components/ui';
+import { Tag } from '@/components/ui/icons';
 
 const FILTERS: { key: TxnType | 'all'; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -23,10 +27,11 @@ const FILTERS: { key: TxnType | 'all'; label: string }[] = [
   { key: 'payment_due', label: 'Due' },
 ];
 
-const CAT_TILE = [colors.tilePurple, colors.tileOrange, colors.tileTeal, colors.tileIndigo, colors.tileGreen];
-
 /** Finance screen — financial pulse, top categories, transactions. */
 export function SpendingScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const CAT_TILE = [colors.tilePurple, colors.tileOrange, colors.tileTeal, colors.tileIndigo, colors.tileGreen];
   const [typeFilter, setTypeFilter] = useState<TxnType | 'all'>('all');
   const filters = useMemo(
     () => ({ type: typeFilter === 'all' ? undefined : typeFilter }),
@@ -67,10 +72,10 @@ export function SpendingScreen() {
 
             {s && (
               <Card style={styles.hero}>
-                <Text style={styles.heroLabel}>Total spent</Text>
+                <Text style={styles.heroLabel}>Total spent this month</Text>
                 <Text style={styles.heroValue}>{formatMinor(s.totalSpent)}</Text>
                 <View style={styles.heroRow}>
-                  <Text style={styles.heroSub}>
+                  <Text style={[styles.heroSub, { color: colors.success }]}>
                     Received {formatMinor(s.totalCredited)}
                   </Text>
                   <Text style={[styles.heroSub, { color: colors.warning }]}>
@@ -88,7 +93,7 @@ export function SpendingScreen() {
                   const pct = Math.max(6, Math.round((c.totalMinor / max) * 100));
                   return (
                     <View key={c.category} style={styles.catRow}>
-                      <IconTile glyph="🏷️" bg={CAT_TILE[i % CAT_TILE.length]} size={36} />
+                      <IconTile icon={Tag} tint={colors.iconTeal} bg={CAT_TILE[i % CAT_TILE.length]} size={36} />
                       <View style={styles.catMid}>
                         <View style={styles.catTop}>
                           <Text style={styles.catName}>{c.category}</Text>
@@ -137,16 +142,16 @@ export function SpendingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: font.size.xxl, fontWeight: '700', color: colors.text },
-  hero: { backgroundColor: colors.primary, gap: 6 },
-  heroLabel: { color: '#E7E7FD', fontSize: font.size.sm },
-  heroValue: { color: '#fff', fontSize: font.size.display, fontWeight: '700' },
+  hero: { gap: 6 },
+  heroLabel: { color: colors.textMuted, fontSize: font.size.sm },
+  heroValue: { color: colors.danger, fontSize: font.size.display, fontWeight: '700' },
   heroRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  heroSub: { color: '#DCDCFB', fontSize: font.size.sm, fontWeight: '600' },
+  heroSub: { color: colors.textMuted, fontSize: font.size.sm, fontWeight: '600' },
   catRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 8 },
   catMid: { flex: 1, gap: 6 },
   catTop: { flexDirection: 'row', justifyContent: 'space-between' },

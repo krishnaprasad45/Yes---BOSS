@@ -12,11 +12,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '@/hooks/useAuth';
 import { loginSchema, type LoginFormValues } from '@/schema/login.schema';
-import { colors, font, radius, spacing } from '@/theme/theme';
+import { font, radius, spacing } from '@/theme/theme';
+import { useTheme } from '@/theme/ThemeContext';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import type { Palette } from '@/theme/palettes';
 import { Card, IconTile, PrimaryButton } from '@/components/ui';
+import { Bot } from '@/components/ui/icons';
 
 export function LoginScreen() {
   const { login } = useAuth();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const {
     control,
     handleSubmit,
@@ -42,7 +48,7 @@ export function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.brand}>
-        <IconTile glyph="🤖" bg={colors.primarySoft} size={64} />
+        <IconTile icon={Bot} tint={colors.primary} bg={colors.primarySoft} size={64} />
         <Text style={styles.title}>Yes Boss</Text>
         <Text style={styles.subtitle}>Your personal assistant</Text>
       </View>
@@ -96,7 +102,7 @@ export function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Palette) => StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: spacing.xl, backgroundColor: colors.bg },
   brand: { alignItems: 'center', marginBottom: spacing.xxl, gap: spacing.sm },
   title: { fontSize: font.size.display, fontWeight: '700', color: colors.text, marginTop: spacing.sm },
