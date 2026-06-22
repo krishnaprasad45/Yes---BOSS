@@ -18,6 +18,7 @@ import {
   usePeakUsage,
   useSubscriptions,
 } from '@/hooks/useDashboard';
+import { useAppSelector } from '@/store/hooks';
 import { formatMinor } from '@/utils/formatters';
 import { font, radius, spacing } from '@/theme/theme';
 import { useTheme } from '@/theme/ThemeContext';
@@ -77,8 +78,21 @@ export function HomeScreen() {
     distance.refetch();
   };
 
+  const pendingTxns = useAppSelector(s => s.finance.pendingTxns);
+  const cachedCalls = useAppSelector(s => s.calls.items);
   const stats = overview.data?.data;
   const day = digest.data?.data;
+  // Blend offline pending debits into Spent Today so it updates before server sync.
+  const pendingSpentMinor = pendingTxns
+    .filter(t => t.type === 'debit')
+    .reduce((sum, t) => sum + t.amountMinor, 0);
+  // Count today's calls directly from the device-synced Redux cache — no backend round-trip.
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const todayCalls = cachedCalls.filter(c => c.occurredAt >= todayStart.toISOString());
+  const callsToday = todayCalls.length;
+  const incomingToday = todayCalls.filter(c => c.direction === 'incoming').length;
+  const outgoingToday = todayCalls.filter(c => c.direction === 'outgoing').length;
+  const missedToday = todayCalls.filter(c => c.direction === 'missed').length;
   const subscriptions = subs.data?.data ?? [];
   const buckets = peak.data?.data ?? [];
   const busiest = buckets.reduce(
@@ -105,8 +119,8 @@ export function HomeScreen() {
         {overview.isLoading && <ActivityIndicator style={{ marginTop: 32 }} size="large" color={colors.primary} />}
         {overview.error && <Text style={styles.error}>{overview.error.message}</Text>}
 
-        {/* Today's overview grid */}
-        {day && (
+        {/* Today's overview grid — calls come from device cache, spend from server */}
+        {(callsToday > 0 || day) && (
           <>
             <SectionHeader title="Today's Overview" />
             <View style={styles.grid}>
@@ -114,22 +128,22 @@ export function HomeScreen() {
                 icon={Phone}
                 tint={colors.iconIndigo}
                 tileBg={colors.tileIndigo}
-                value={String(day.callsCount)}
+                value={String(callsToday)}
                 label="Calls Today"
                 onPress={() => navigation.navigate('Calls', { screen: 'CallsList', params: { today: true } })}
                 accessory={
                   <View style={styles.callBreakdown}>
                     <View style={styles.breakRow}>
                       <PhoneIncoming size={13} color={colors.success} strokeWidth={2.4} />
-                      <Text style={styles.breakNum}>{day.incomingCount}</Text>
+                      <Text style={styles.breakNum}>{incomingToday}</Text>
                     </View>
                     <View style={styles.breakRow}>
                       <PhoneOutgoing size={13} color={colors.iconIndigo} strokeWidth={2.4} />
-                      <Text style={styles.breakNum}>{day.outgoingCount}</Text>
+                      <Text style={styles.breakNum}>{outgoingToday}</Text>
                     </View>
                     <View style={styles.breakRow}>
                       <PhoneMissed size={13} color={colors.danger} strokeWidth={2.4} />
-                      <Text style={styles.breakNum}>{day.missedCount}</Text>
+                      <Text style={styles.breakNum}>{missedToday}</Text>
                     </View>
                   </View>
                 }
@@ -138,7 +152,7 @@ export function HomeScreen() {
                 icon={Wallet}
                 tint={colors.iconGreen}
                 tileBg={colors.tileGreen}
-                value={formatMinor(day.spentMinor)}
+                value={formatMinor((day?.spentMinor ?? 0) + pendingSpentMinor)}
                 label="Spent Today"
                 onPress={() => navigation.navigate('Finance')}
               />
@@ -151,7 +165,7 @@ export function HomeScreen() {
                 value={distance.data ? `${distance.data.data.totalKm} km` : '—'}
                 label="Distance (30d)"
               />
-              <StatCard icon={ReceiptText} tint={colors.iconOrange} tileBg={colors.tileOrange} value={String(day.billsDue)} label="Bills Due" />
+              <StatCard icon={ReceiptText} tint={colors.iconOrange} tileBg={colors.tileOrange} value={String(day?.billsDue ?? 0)} label="Bills Due" />
             </View>
           </>
         )}
