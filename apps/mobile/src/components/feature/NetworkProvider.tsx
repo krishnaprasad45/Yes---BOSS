@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchBulkData } from '@/store/bulkThunk';
 import { drainPendingOps } from '@/store/sync';
 import { setConnected } from '@/store/slices/networkSlice';
+import { useAutoDeviceSync } from '@/hooks/useAutoDeviceSync';
 import { WifiOff } from '@/components/ui/icons';
 import { font } from '@/theme/theme';
 import { useTheme } from '@/theme/ThemeContext';
@@ -27,6 +28,9 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const isConnected = useAppSelector(state => state.network.isConnected);
+
+  // Auto-sync device call log + SMS inbox silently on launch and foreground return.
+  useAutoDeviceSync(isAuthenticated === true && isConnected === true);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {

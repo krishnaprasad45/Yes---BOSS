@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import type {
@@ -150,7 +150,10 @@ export function useCategories() {
   useEffect(() => {
     if (data?.data && fetchStatus === 'idle') dispatch(setCategories(data.data));
   }, [data, fetchStatus, dispatch]);
-  return query;
+  // Always return live Redux state so optimistic offline adds are immediately
+  // visible — query.data is a stale snapshot that doesn't reflect local updates.
+  const liveData = useMemo(() => envelope<Category[]>(cached), [cached]);
+  return { ...query, data: liveData };
 }
 
 export function useFinanceConfig() {
@@ -170,6 +173,7 @@ function useFinanceInvalidate() {
   return () => {
     qc.invalidateQueries({ queryKey: ['finance'] });
     qc.invalidateQueries({ queryKey: ['sms-txns'] });
+    qc.invalidateQueries({ queryKey: ['stats'] });
   };
 }
 

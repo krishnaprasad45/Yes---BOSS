@@ -13,8 +13,23 @@ type ListFilters = Omit<CallListParams, 'page' | 'limit'>;
 export function useCallList(filters: ListFilters) {
   const dispatch = useAppDispatch();
   const cache = useAppSelector(s => s.calls);
-  // Only the unfiltered list maps cleanly onto the persisted snapshot.
-  const seedable = Object.keys(filters).length === 0 && cache.pagination != null;
+  const seedable = cache.items.length > 0 && cache.pagination != null;
+
+  // Filter cached snapshot client-side so offline view respects direction / time
+  // bounds even when the server is unreachable.
+  const seededItems = seedable
+    ? cache.items.filter(c => {
+        if (filters.direction && c.direction !== filters.direction) return false;
+        if (filters.from && c.occurredAt < filters.from) return false;
+        if (filters.to && c.occurredAt > filters.to) return false;
+        if (filters.search) {
+          const s = filters.search.toLowerCase();
+          if (!c.phoneNumber.includes(s) && !(c.contactName ?? '').toLowerCase().includes(s))
+            return false;
+        }
+        return true;
+      })
+    : [];
 
   const query = useInfiniteQuery({
     queryKey: ['calls', filters],
@@ -25,16 +40,29 @@ export function useCallList(filters: ListFilters) {
       last.pagination.hasNextPage ? last.pagination.currentPage + 1 : undefined,
     initialData: seedable
       ? {
-          pages: [{ data: cache.items, pagination: cache.pagination!, message: '' }],
+          pages: [
+            {
+              data: seededItems,
+              pagination: {
+                itemCount: seededItems.length,
+                pageCount: 1,
+                currentPage: 1,
+                hasNextPage: false,
+              },
+              message: '',
+            },
+          ],
           pageParams: [1],
         }
       : undefined,
   });
 
-  // Mirror the freshest first page back into the offline cache.
+  // Mirror the unfiltered first page back into the offline cache.
+  const noFilters =
+    !filters.direction && !filters.search && !filters.from && !filters.to;
   useEffect(() => {
-    if (seedable && query.data?.pages[0]) dispatch(setCalls(query.data.pages[0]));
-  }, [seedable, dispatch, query.data]);
+    if (noFilters && query.data?.pages[0]) dispatch(setCalls(query.data.pages[0]));
+  }, [noFilters, dispatch, query.data]);
 
   return query;
 }
