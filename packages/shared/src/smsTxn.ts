@@ -19,6 +19,10 @@ export interface SmsTxn {
   receivedAt: string;
   /** Due date for payment_due messages. */
   dueAt: string | null;
+  /** "sms" = parsed from inbox, "manual" = entered by the user. */
+  entryMode: "sms" | "manual";
+  /** Optional free-text added on a manual entry. */
+  note: string | null;
   createdAt: string;
 }
 

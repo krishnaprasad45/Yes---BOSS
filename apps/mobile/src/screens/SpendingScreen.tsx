@@ -4,47 +4,81 @@ import {
   FlatList,
   RefreshControl,
   StyleSheet,
+  Switch,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { SmsTxn, SpendingSummary, TxnType } from '@yes-boss/shared';
-import { useSmsTxnList, useSpendingSummary } from '@/hooks/useSmsTxns';
-import { useInboxSync } from '@/hooks/useInboxSync';
+import type { SmsTxn } from '@yes-boss/shared';
+import { useSmsTxnList } from '@/hooks/useSmsTxns';
+import {
+  useCategories,
+  useFinanceConfig,
+  useInsights,
+  useUpdateFinanceConfig,
+  type Period,
+} from '@/hooks/useFinance';
 import { SmsTxnCard } from '@/components/feature/SmsTxnCard';
+import { DonutChart } from '@/components/feature/DonutChart';
+import { ManualTxnModal } from '@/components/feature/ManualTxnModal';
+import { CategoriesModal } from '@/components/feature/CategoriesModal';
 import { formatMinor } from '@/utils/formatters';
 import { font, radius, spacing } from '@/theme/theme';
 import { useTheme } from '@/theme/ThemeContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import type { Palette } from '@/theme/palettes';
-import { Card, Chip, IconTile, PrimaryButton, SectionHeader } from '@/components/ui';
-import { Tag } from '@/components/ui/icons';
+import { Card, PrimaryButton } from '@/components/ui';
+import { Pencil, Plus, SlidersHorizontal } from '@/components/ui/icons';
 
-const FILTERS: { key: TxnType | 'all'; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'debit', label: 'Spent' },
-  { key: 'credit', label: 'Received' },
-  { key: 'payment_due', label: 'Due' },
+const PERIODS: { key: Period; label: string }[] = [
+  { key: 'daily', label: 'Daily' },
+  { key: 'weekly', label: 'Weekly' },
+  { key: 'monthly', label: 'Monthly' },
+  { key: 'yearly', label: 'Yearly' },
 ];
 
-/** Finance screen — financial pulse, top categories, transactions. */
+const PERIOD_NOUN: Record<Period, string> = {
+  daily: 'Today',
+  weekly: 'This Week',
+  monthly: 'This Month',
+  yearly: 'This Year',
+};
+
+/** Spending Insights — period totals, budget, donut breakdown, manual entry. */
 export function SpendingScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const CAT_TILE = [colors.tilePurple, colors.tileOrange, colors.tileTeal, colors.tileIndigo, colors.tileGreen];
-  const [typeFilter, setTypeFilter] = useState<TxnType | 'all'>('all');
-  const filters = useMemo(
-    () => ({ type: typeFilter === 'all' ? undefined : typeFilter }),
-    [typeFilter],
-  );
 
-  const summary = useSpendingSummary();
-  const { sync, isSyncing } = useInboxSync();
-  const { data, isLoading, isRefetching, refetch, fetchNextPage, hasNextPage, error } =
-    useSmsTxnList(filters);
+  const [period, setPeriod] = useState<Period>('daily');
+  const [showManual, setShowManual] = useState(false);
+  const [showCategories, setShowCategories] = useState(false);
 
-  const txns: SmsTxn[] = data?.pages.flatMap(p => p.data) ?? [];
-  const s: SpendingSummary | undefined = summary.data?.data;
+  const insights = useInsights(period);
+  const categories = useCategories();
+  const config = useFinanceConfig();
+  const updateConfig = useUpdateFinanceConfig();
+
+  const range = insights.range;
+  const txnList = useSmsTxnList({ from: range.from, to: range.to });
+  const txns: SmsTxn[] = txnList.data?.pages.flatMap(p => p.data) ?? [];
+
+  const data = insights.data?.data;
+  const cats = categories.data?.data ?? [];
+  const manualEnabled = config.data?.data.manualEntryEnabled ?? false;
+
+  const periodBudget = (data?.dailyBudgetMinor ?? 0) * range.days;
+  const spent = data?.totalSpent ?? 0;
+  const pct = periodBudget > 0 ? Math.min(100, Math.round((spent / periodBudget) * 100)) : 0;
+  const overBudget = spent > periodBudget && periodBudget > 0;
+
+  const segments = (data?.byCategory ?? []).map(c => ({ value: c.totalMinor, color: c.color }));
+
+  const onRefresh = () => {
+    insights.refetch();
+    txnList.refetch();
+    categories.refetch();
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -53,112 +87,216 @@ export function SpendingScreen() {
         data={txns}
         keyExtractor={t => t.id}
         renderItem={({ item }) => <SmsTxnCard txn={item} />}
-        onEndReached={() => hasNextPage && fetchNextPage()}
+        onEndReached={() => txnList.hasNextPage && txnList.fetchNextPage()}
         onEndReachedThreshold={0.5}
         refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={() => {
-              refetch();
-              summary.refetch();
-            }}
-          />
+          <RefreshControl refreshing={txnList.isRefetching} onRefresh={onRefresh} tintColor={colors.primary} />
         }
         ListHeaderComponent={
           <View style={{ gap: spacing.lg }}>
-            <View style={styles.header}>
-              <Text style={styles.title}>Financial Pulse</Text>
+            <Text style={styles.title}>Spending Insights</Text>
+
+            {/* Period tabs */}
+            <View style={styles.periodRow}>
+              {PERIODS.map(p => (
+                <TouchableOpacity
+                  key={p.key}
+                  style={[styles.periodChip, period === p.key && styles.periodChipActive]}
+                  onPress={() => setPeriod(p.key)}>
+                  <Text style={[styles.periodText, period === p.key && styles.periodTextActive]}>
+                    {p.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
 
-            {s && (
-              <Card style={styles.hero}>
-                <Text style={styles.heroLabel}>Total spent this month</Text>
-                <Text style={styles.heroValue}>{formatMinor(s.totalSpent)}</Text>
-                <View style={styles.heroRow}>
-                  <Text style={[styles.heroSub, { color: colors.success }]}>
-                    Received {formatMinor(s.totalCredited)}
-                  </Text>
-                  <Text style={[styles.heroSub, { color: colors.warning }]}>
-                    {s.dueCount} bill{s.dueCount === 1 ? '' : 's'} due
-                  </Text>
-                </View>
-              </Card>
-            )}
-
-            {s && s.byCategory.length > 0 && (
-              <Card>
-                <SectionHeader title="Top categories" />
-                {s.byCategory.slice(0, 5).map((c, i) => {
-                  const max = s.byCategory[0].totalMinor || 1;
-                  const pct = Math.max(6, Math.round((c.totalMinor / max) * 100));
-                  return (
-                    <View key={c.category} style={styles.catRow}>
-                      <IconTile icon={Tag} tint={colors.iconTeal} bg={CAT_TILE[i % CAT_TILE.length]} size={36} />
-                      <View style={styles.catMid}>
-                        <View style={styles.catTop}>
-                          <Text style={styles.catName}>{c.category}</Text>
-                          <Text style={styles.catAmt}>{formatMinor(c.totalMinor)}</Text>
-                        </View>
-                        <View style={styles.track}>
-                          <View style={[styles.fill, { width: `${pct}%` }]} />
-                        </View>
-                      </View>
-                    </View>
-                  );
-                })}
-              </Card>
-            )}
-
-            <PrimaryButton
-              title="Sync SMS"
-              onPress={sync}
-              loading={isSyncing}
-            />
-
-            <SectionHeader title="Recent transactions" />
-            <View style={styles.filterRow}>
-              {FILTERS.map(f => (
-                <Chip
-                  key={f.key}
-                  label={f.label}
-                  active={typeFilter === f.key}
-                  onPress={() => setTypeFilter(f.key)}
+            {/* Budget hero */}
+            <Card style={styles.hero}>
+              <Text style={styles.heroLabel}>Total Spent {PERIOD_NOUN[period]}</Text>
+              <Text style={styles.heroValue}>{formatMinor(spent)}</Text>
+              <View style={styles.heroMetaRow}>
+                <Text style={styles.heroBudget}>
+                  Budget: {formatMinor(periodBudget)}
+                </Text>
+                <Text style={[styles.heroPct, overBudget && { color: colors.danger }]}>
+                  {pct}% Used
+                </Text>
+              </View>
+              <View style={styles.track}>
+                <View
+                  style={[
+                    styles.fill,
+                    { width: `${pct}%`, backgroundColor: overBudget ? colors.danger : colors.primary },
+                  ]}
                 />
-              ))}
+              </View>
+            </Card>
+
+            {/* Category breakdown */}
+            <Text style={styles.sectionTitle}>Category Breakdown</Text>
+            {segments.length > 0 ? (
+              <Card style={{ gap: spacing.lg }}>
+                <View style={styles.donutWrap}>
+                  <DonutChart segments={segments} size={180} thickness={22}>
+                    <View style={{ alignItems: 'center' }}>
+                      <Text style={styles.donutTotalLabel}>Total</Text>
+                      <Text style={styles.donutTotal}>{formatMinor(spent)}</Text>
+                    </View>
+                  </DonutChart>
+                </View>
+                {data!.byCategory.map(c => (
+                  <View key={c.category} style={styles.catRow}>
+                    <View style={[styles.catBar, { backgroundColor: c.color }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.catName}>{c.category}</Text>
+                      <Text style={styles.catSub}>{c.percent}% of spend</Text>
+                    </View>
+                    <Text style={styles.catAmt}>{formatMinor(c.totalMinor)}</Text>
+                    <TouchableOpacity onPress={() => setShowCategories(true)} style={styles.pencil}>
+                      <Pencil size={15} color={colors.textMuted} strokeWidth={2.2} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </Card>
+            ) : (
+              <Card>
+                <Text style={styles.empty}>
+                  No spending recorded for {PERIOD_NOUN[period].toLowerCase()} yet.
+                </Text>
+              </Card>
+            )}
+
+            <TouchableOpacity style={styles.customizeBtn} onPress={() => setShowCategories(true)}>
+              <SlidersHorizontal size={16} color={colors.primary} strokeWidth={2.3} />
+              <Text style={styles.customizeText}>Customize Categories</Text>
+            </TouchableOpacity>
+
+            {/* Manual entry toggle + add */}
+            <Card style={styles.manualCard}>
+              <View style={styles.manualHead}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.manualTitle}>Add manually</Text>
+                  <Text style={styles.manualSub}>For cash or card — no SMS needed</Text>
+                </View>
+                <Switch
+                  value={manualEnabled}
+                  onValueChange={v => updateConfig.mutate({ manualEntryEnabled: v })}
+                  trackColor={{ true: colors.primary, false: colors.cardAlt }}
+                  thumbColor="#fff"
+                />
+              </View>
+              {manualEnabled && (
+                <PrimaryButton title="Add transaction" onPress={() => setShowManual(true)} />
+              )}
+            </Card>
+
+            <View style={styles.txnHead}>
+              <Text style={styles.sectionTitle}>Transactions</Text>
             </View>
           </View>
         }
         ListEmptyComponent={
-          isLoading ? (
-            <ActivityIndicator style={styles.empty} size="large" color={colors.primary} />
+          txnList.isLoading ? (
+            <ActivityIndicator style={styles.loading} size="large" color={colors.primary} />
           ) : (
             <Text style={styles.empty}>
-              {error ? error.message : 'No transactions yet. Sync SMS to get started.'}
+              No transactions {PERIOD_NOUN[period].toLowerCase()}.{' '}
+              {manualEnabled ? 'Tap "Add transaction" above.' : 'Enable manual entry to add one.'}
             </Text>
           )
         }
+      />
+
+      {manualEnabled && (
+        <TouchableOpacity style={styles.fab} onPress={() => setShowManual(true)} activeOpacity={0.85}>
+          <Plus size={26} color={colors.onPrimary} strokeWidth={2.6} />
+        </TouchableOpacity>
+      )}
+
+      <ManualTxnModal visible={showManual} onClose={() => setShowManual(false)} categories={cats} />
+      <CategoriesModal
+        visible={showCategories}
+        onClose={() => setShowCategories(false)}
+        categories={cats}
       />
     </SafeAreaView>
   );
 }
 
-const makeStyles = (colors: Palette) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: font.size.xxl, fontWeight: '700', color: colors.text },
-  hero: { gap: 6 },
-  heroLabel: { color: colors.textMuted, fontSize: font.size.sm },
-  heroValue: { color: colors.danger, fontSize: font.size.display, fontWeight: '700' },
-  heroRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  heroSub: { color: colors.textMuted, fontSize: font.size.sm, fontWeight: '600' },
-  catRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 8 },
-  catMid: { flex: 1, gap: 6 },
-  catTop: { flexDirection: 'row', justifyContent: 'space-between' },
-  catName: { fontSize: font.size.md, color: colors.text, fontWeight: '600', textTransform: 'capitalize' },
-  catAmt: { fontSize: font.size.md, color: colors.text, fontWeight: '700' },
-  track: { height: 6, borderRadius: 3, backgroundColor: colors.cardAlt, overflow: 'hidden' },
-  fill: { height: 6, borderRadius: 3, backgroundColor: colors.primary },
-  filterRow: { flexDirection: 'row', gap: spacing.sm, marginTop: -spacing.sm, marginBottom: spacing.sm, flexWrap: 'wrap' },
-  empty: { textAlign: 'center', color: colors.textMuted, marginTop: 40, paddingHorizontal: 32 },
-});
+const makeStyles = (colors: Palette) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    content: { padding: spacing.lg, paddingBottom: 96 },
+    title: { fontSize: font.size.xxl, fontWeight: '700', color: colors.text },
+    sectionTitle: { fontSize: font.size.lg, fontWeight: '700', color: colors.text },
+    periodRow: { flexDirection: 'row', gap: spacing.sm },
+    periodChip: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: 9,
+      borderRadius: radius.pill,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    periodChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    periodText: { fontSize: font.size.sm, fontWeight: '700', color: colors.textMuted },
+    periodTextActive: { color: colors.onPrimary },
+    hero: { gap: 6, alignItems: 'center' },
+    heroLabel: { fontSize: font.size.sm, color: colors.textMuted },
+    heroValue: { fontSize: font.size.display, fontWeight: '800', color: colors.primary },
+    heroMetaRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+      marginTop: 4,
+    },
+    heroBudget: { fontSize: font.size.sm, color: colors.success, fontWeight: '600' },
+    heroPct: { fontSize: font.size.sm, color: colors.textMuted, fontWeight: '700' },
+    track: { height: 8, borderRadius: 4, backgroundColor: colors.cardAlt, overflow: 'hidden', width: '100%' },
+    fill: { height: 8, borderRadius: 4 },
+    donutWrap: { alignItems: 'center' },
+    donutTotalLabel: { fontSize: font.size.xs, color: colors.textMuted },
+    donutTotal: { fontSize: font.size.lg, fontWeight: '800', color: colors.text },
+    catRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    catBar: { width: 4, height: 34, borderRadius: 2 },
+    catName: { fontSize: font.size.md, fontWeight: '600', color: colors.text },
+    catSub: { fontSize: font.size.xs, color: colors.textMuted, marginTop: 1 },
+    catAmt: { fontSize: font.size.md, fontWeight: '700', color: colors.text },
+    pencil: { padding: 4 },
+    customizeBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 13,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+    },
+    customizeText: { fontSize: font.size.md, fontWeight: '700', color: colors.primary },
+    manualCard: { gap: spacing.md },
+    manualHead: { flexDirection: 'row', alignItems: 'center' },
+    manualTitle: { fontSize: font.size.md, fontWeight: '700', color: colors.text },
+    manualSub: { fontSize: font.size.xs, color: colors.textMuted, marginTop: 1 },
+    txnHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    loading: { marginTop: 32 },
+    empty: { textAlign: 'center', color: colors.textMuted, paddingVertical: 16, paddingHorizontal: 16 },
+    fab: {
+      position: 'absolute',
+      right: spacing.lg,
+      bottom: spacing.lg,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 6,
+    },
+  });

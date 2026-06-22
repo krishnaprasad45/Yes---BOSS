@@ -40,6 +40,10 @@ export {
   ShieldCheck,
   Moon,
   Sun,
+  Pencil,
+  Plus,
+  SlidersHorizontal,
+  BadgeCheck,
 } from 'lucide-react-native';
 
 export type { LucideIcon } from 'lucide-react-native';
