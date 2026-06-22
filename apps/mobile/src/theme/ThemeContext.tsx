@@ -1,11 +1,16 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { MMKV } from 'react-native-mmkv';
 import { dark, light, type Palette, type ThemeMode } from './palettes';
 
-// Tiny dedicated store so the saved choice is read synchronously on first
-// render — no theme flash on cold start.
-const store = new MMKV({ id: 'yes-boss-ui' });
 const KEY = 'theme-mode';
+
+// In debug builds MMKV (TurboModule) is unavailable — use a plain object shim.
+const store = __DEV__
+  ? { getString: (_k: string) => undefined as string | undefined, set: (_k: string, _v: string) => {} }
+  : (() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { MMKV } = require('react-native-mmkv') as typeof import('react-native-mmkv');
+      return new MMKV({ id: 'yes-boss-ui' });
+    })();
 
 interface ThemeValue {
   mode: ThemeMode;
