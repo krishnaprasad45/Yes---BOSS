@@ -39,9 +39,16 @@ export function SmsTxnCard({ txn }: { txn: SmsTxn }) {
         <Text style={styles.merchant} numberOfLines={1}>
           {txn.merchant ?? txn.sender}
         </Text>
-        <Text style={styles.sub}>
-          {meta.label} · {formatDateTime(txn.receivedAt)}
-        </Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.sub}>
+            {meta.label} · {formatDateTime(txn.receivedAt)}
+          </Text>
+          {txn.entryMode === 'manual' && (
+            <View style={styles.tag}>
+              <Text style={styles.tagText}>Manual</Text>
+            </View>
+          )}
+        </View>
       </View>
       <Text style={[styles.amount, { color: meta.color(colors) }]}>
         {txn.amountMinor !== null ? `${meta.sign}${formatMinor(txn.amountMinor)}` : '—'}
@@ -66,6 +73,14 @@ const makeStyles = (colors: Palette) =>
     },
     mid: { flex: 1 },
     merchant: { fontSize: font.size.md, fontWeight: '600', color: colors.text },
-    sub: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+    sub: { fontSize: font.size.sm, color: colors.textMuted },
+    tag: {
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+      backgroundColor: colors.primarySoft,
+    },
+    tagText: { fontSize: 9, fontWeight: '700', color: colors.primary, letterSpacing: 0.3 },
     amount: { fontSize: font.size.md, fontWeight: '700' },
   });

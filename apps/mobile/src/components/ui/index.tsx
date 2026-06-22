@@ -47,12 +47,14 @@ export function PressScale({
   children,
   onPress,
   style,
+  containerStyle,
   scaleTo = 0.97,
   disabled,
 }: {
   children: React.ReactNode;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
+  containerStyle?: StyleProp<ViewStyle>;
   scaleTo?: number;
   disabled?: boolean;
 }) {
@@ -64,7 +66,8 @@ export function PressScale({
       onPress={onPress}
       disabled={disabled}
       onPressIn={() => to(scaleTo)}
-      onPressOut={() => to(1)}>
+      onPressOut={() => to(1)}
+      style={containerStyle}>
       <Animated.View style={[{ transform: [{ scale }] }, style]}>{children}</Animated.View>
     </Pressable>
   );
@@ -166,7 +169,10 @@ export function StatCard({
   );
   if (onPress) {
     return (
-      <PressScale onPress={onPress} style={StyleSheet.flatten([styles.card, styles.statCard, style])}>
+      <PressScale
+        onPress={onPress}
+        containerStyle={{ flex: 1 }}
+        style={StyleSheet.flatten([styles.card, styles.statCard, style])}>
         {body}
       </PressScale>
     );

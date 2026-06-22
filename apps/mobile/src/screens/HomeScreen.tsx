@@ -134,7 +134,14 @@ export function HomeScreen() {
                   </View>
                 }
               />
-              <StatCard icon={Wallet} tint={colors.iconGreen} tileBg={colors.tileGreen} value={formatMinor(day.spentMinor)} label="Spent Today" />
+              <StatCard
+                icon={Wallet}
+                tint={colors.iconGreen}
+                tileBg={colors.tileGreen}
+                value={formatMinor(day.spentMinor)}
+                label="Spent Today"
+                onPress={() => navigation.navigate('Finance')}
+              />
             </View>
             <View style={styles.grid}>
               <StatCard

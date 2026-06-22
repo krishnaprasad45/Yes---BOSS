@@ -13,6 +13,7 @@ import type {
 } from "./stats";
 import type { DistanceSummary } from "./location";
 import type { AutoReplyConfig } from "./settings";
+import type { Category, FinanceConfig, SpendingInsights } from "./finance";
 import type { Paginated } from "./api";
 
 export interface BulkSnapshot {
@@ -30,5 +31,11 @@ export interface BulkSnapshot {
   };
   settings: {
     autoReply: AutoReplyConfig;
+  };
+  finance: {
+    categories: Category[];
+    config: FinanceConfig;
+    /** Insights for "today" so the Finance tab paints offline on launch. */
+    todayInsights: SpendingInsights;
   };
 }

@@ -51,6 +51,7 @@ async function bootstrap() {
     .addTag("[8] Location", "GPS point sync, distance travelled")
     .addTag("[9] Health", "Liveness & readiness probes")
     .addTag("[10] Bulk", "One-shot offline-first hydration snapshot")
+    .addTag("[11] Finance", "Spending insights, categories, budget & manual entry")
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

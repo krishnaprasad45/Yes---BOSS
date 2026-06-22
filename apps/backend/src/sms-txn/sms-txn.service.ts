@@ -110,7 +110,7 @@ export class SmsTxnService {
   }
 }
 
-function toSmsTxn(row: {
+export function toSmsTxn(row: {
   id: string;
   type: string;
   amountMinor: number | null;
@@ -122,6 +122,8 @@ function toSmsTxn(row: {
   sender: string;
   receivedAt: Date;
   dueAt: Date | null;
+  entryMode: string;
+  note: string | null;
   createdAt: Date;
 }): SmsTxn {
   return {
@@ -136,6 +138,8 @@ function toSmsTxn(row: {
     sender: row.sender,
     receivedAt: row.receivedAt.toISOString(),
     dueAt: row.dueAt ? row.dueAt.toISOString() : null,
+    entryMode: row.entryMode as SmsTxn["entryMode"],
+    note: row.note,
     createdAt: row.createdAt.toISOString(),
   };
 }

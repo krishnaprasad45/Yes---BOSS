@@ -14,6 +14,7 @@ import calls from './slices/callsSlice';
 import smsTxns from './slices/smsTxnsSlice';
 import stats from './slices/statsSlice';
 import settings from './slices/settingsSlice';
+import finance from './slices/financeSlice';
 import pendingOps from './slices/pendingOpsSlice';
 import network from './slices/networkSlice';
 
@@ -22,6 +23,7 @@ const rootReducer = combineReducers({
   smsTxns,
   stats,
   settings,
+  finance,
   pendingOps,
   network,
 });
@@ -32,7 +34,7 @@ const persistConfig = {
   storage: mmkvStorage,
   // network is live-only; everything else survives a cold start so the app
   // paints fully without internet.
-  whitelist: ['calls', 'smsTxns', 'stats', 'settings', 'pendingOps'],
+  whitelist: ['calls', 'smsTxns', 'stats', 'settings', 'finance', 'pendingOps'],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

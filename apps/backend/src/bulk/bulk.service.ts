@@ -5,7 +5,17 @@ import { SmsTxnService } from "../sms-txn/sms-txn.service";
 import { StatsService } from "../stats/stats.service";
 import { LocationService } from "../location/location.service";
 import { SettingsService } from "../settings/settings.service";
+import { FinanceService } from "../finance/finance.service";
 import { paginated } from "../common/envelope";
+
+/** Inclusive ISO bounds for the server's "today". */
+function todayRange(): { from: string; to: string } {
+  const from = new Date();
+  from.setHours(0, 0, 0, 0);
+  const to = new Date();
+  to.setHours(23, 59, 59, 999);
+  return { from: from.toISOString(), to: to.toISOString() };
+}
 
 /** First page size baked into the hydration snapshot. */
 const SNAPSHOT_PAGE = 10;
@@ -18,6 +28,7 @@ export class BulkService {
     private stats: StatsService,
     private location: LocationService,
     private settings: SettingsService,
+    private finance: FinanceService,
   ) {}
 
   /**
@@ -47,6 +58,13 @@ export class BulkService {
       this.settings.getAutoReply(userId),
     ]);
 
+    const today = todayRange();
+    const [categories, financeConfig, todayInsights] = await Promise.all([
+      this.finance.listCategories(),
+      this.finance.getConfig(userId),
+      this.finance.insights(userId, today),
+    ]);
+
     return {
       generatedAt: new Date().toISOString(),
       calls: paginated(callsPage.data, callsPage.total, callsPage.page, callsPage.limit),
@@ -54,6 +72,7 @@ export class BulkService {
       spendingSummary,
       stats: { overview, digest, distance, subscriptions, peakUsage },
       settings: { autoReply },
+      finance: { categories, config: financeConfig, todayInsights },
     };
   }
 }

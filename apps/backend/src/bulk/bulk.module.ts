@@ -5,11 +5,12 @@ import { SmsTxnModule } from "../sms-txn/sms-txn.module";
 import { StatsModule } from "../stats/stats.module";
 import { LocationModule } from "../location/location.module";
 import { SettingsModule } from "../settings/settings.module";
+import { FinanceModule } from "../finance/finance.module";
 import { BulkController } from "./bulk.controller";
 import { BulkService } from "./bulk.service";
 
 @Module({
-  imports: [AuthModule, CallModule, SmsTxnModule, StatsModule, LocationModule, SettingsModule],
+  imports: [AuthModule, CallModule, SmsTxnModule, StatsModule, LocationModule, SettingsModule, FinanceModule],
   controllers: [BulkController],
   providers: [BulkService],
 })

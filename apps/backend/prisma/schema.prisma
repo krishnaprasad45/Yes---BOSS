@@ -76,10 +76,40 @@ model SmsTxn {
   receivedAt  DateTime
   dueAt       DateTime?
   dedupeKey   String    @unique
+  // "sms" = parsed from an inbox message, "manual" = entered by the user.
+  entryMode   String    @default("sms")
+  // Optional free-text the user adds on a manual entry.
+  note        String?
   createdAt   DateTime  @default(now())
 
   @@index([receivedAt])
   @@index([type])
+  @@index([entryMode])
+}
+
+// User-customisable spending categories (name, colour, optional daily budget).
+model Category {
+  id               String   @id @default(uuid())
+  name             String   @unique
+  color            String   @default("#2DD4BF")
+  // Optional per-category daily budget in minor units (paise).
+  dailyBudgetMinor Int?
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+// Per-user finance preferences (single-user app, keyed by userId).
+model FinanceConfig {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  // Overall daily spend budget in minor units (default ₹5,000).
+  dailyBudgetMinor   Int      @default(500000)
+  // When on, the app surfaces the "add transaction manually" flow.
+  manualEntryEnabled Boolean  @default(false)
+  updatedAt          DateTime @updatedAt
 }
 
 model MediaAsset {
