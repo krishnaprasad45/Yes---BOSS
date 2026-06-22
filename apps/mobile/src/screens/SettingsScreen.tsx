@@ -288,7 +288,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   title: { fontSize: font.size.xxl, fontWeight: '700', color: colors.text },
   card: { gap: spacing.sm },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  headLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
   cardTitle: { fontSize: font.size.lg, fontWeight: '700', color: colors.text },
   cardSub: { fontSize: font.size.sm, color: colors.textMuted },
   label: { fontSize: font.size.sm, fontWeight: '600', color: colors.text, marginTop: spacing.sm },
