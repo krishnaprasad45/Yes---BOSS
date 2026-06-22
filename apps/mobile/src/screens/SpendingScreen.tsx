@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { SmsTxn } from '@yes-boss/shared';
 import { useSmsTxnList } from '@/hooks/useSmsTxns';
+import { useAppSelector } from '@/store/hooks';
 import {
   useCategories,
   useFinanceConfig,
@@ -61,7 +62,34 @@ export function SpendingScreen() {
 
   const range = insights.range;
   const txnList = useSmsTxnList({ from: range.from, to: range.to });
-  const txns: SmsTxn[] = txnList.data?.pages.flatMap(p => p.data) ?? [];
+  const pendingTxns = useAppSelector(s => s.finance.pendingTxns);
+
+  const serverTxns: SmsTxn[] = txnList.data?.pages.flatMap(p => p.data) ?? [];
+
+  // Convert pending offline txns to SmsTxn shape for display.
+  const pendingAsTxns: SmsTxn[] = pendingTxns
+    .filter(t => {
+      const ts = t.occurredAt ? new Date(t.occurredAt).getTime() : new Date(t.createdAt).getTime();
+      return ts >= new Date(range.from).getTime() && ts <= new Date(range.to).getTime();
+    })
+    .map(t => ({
+      id: t.localId,
+      type: t.type,
+      amountMinor: t.amountMinor,
+      currency: 'INR' as const,
+      merchant: t.note ?? null,
+      source: null,
+      category: t.category ?? null,
+      rawBody: '',
+      sender: 'Manual entry',
+      receivedAt: t.occurredAt ?? t.createdAt,
+      dueAt: null,
+      entryMode: 'manual' as const,
+      note: t.note ?? null,
+      createdAt: t.createdAt,
+    }));
+
+  const txns: SmsTxn[] = [...pendingAsTxns, ...serverTxns];
 
   const data = insights.data?.data;
   const cats = categories.data?.data ?? [];

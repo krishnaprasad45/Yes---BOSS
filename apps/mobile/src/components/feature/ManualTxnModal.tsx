@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -10,6 +10,16 @@ import {
 } from 'react-native';
 import type { Category } from '@yes-boss/shared';
 import { font, radius, spacing } from '@/theme/theme';
+
+const CREDIT_CATEGORIES: Category[] = [
+  { id: 'c_salary',   name: 'Salary',        color: '#22C55E', dailyBudgetMinor: null, sortOrder: 0 },
+  { id: 'c_freelance',name: 'Freelance',      color: '#2DD4BF', dailyBudgetMinor: null, sortOrder: 1 },
+  { id: 'c_debt',     name: 'Debt Return',    color: '#6366F1', dailyBudgetMinor: null, sortOrder: 2 },
+  { id: 'c_stocks',   name: 'Stocks Redeem',  color: '#A855F7', dailyBudgetMinor: null, sortOrder: 3 },
+  { id: 'c_interest', name: 'Interest',       color: '#F59E0B', dailyBudgetMinor: null, sortOrder: 4 },
+  { id: 'c_gift',     name: 'Gift',           color: '#EC4899', dailyBudgetMinor: null, sortOrder: 5 },
+  { id: 'c_other',    name: 'Other',          color: '#64748B', dailyBudgetMinor: null, sortOrder: 6 },
+];
 import { useTheme } from '@/theme/ThemeContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import type { Palette } from '@/theme/palettes';
@@ -35,6 +45,11 @@ export function ManualTxnModal({
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [note, setNote] = useState('');
+
+  const activeCats = useMemo(
+    () => (type === 'credit' ? CREDIT_CATEGORIES : categories),
+    [type, categories],
+  );
 
   const reset = () => {
     setType('debit');
@@ -79,7 +94,7 @@ export function ManualTxnModal({
                 <TouchableOpacity
                   key={t}
                   style={[styles.typeChip, type === t && styles.typeChipActive]}
-                  onPress={() => setType(t)}>
+                  onPress={() => { setType(t); setCategory(null); }}>
                   <Text style={[styles.typeText, type === t && styles.typeTextActive]}>
                     {t === 'debit' ? 'Spent' : 'Received'}
                   </Text>
@@ -99,7 +114,7 @@ export function ManualTxnModal({
 
             <Text style={styles.label}>Category</Text>
             <View style={styles.catWrap}>
-              {categories.map(c => (
+              {activeCats.map(c => (
                 <TouchableOpacity
                   key={c.id}
                   style={[
