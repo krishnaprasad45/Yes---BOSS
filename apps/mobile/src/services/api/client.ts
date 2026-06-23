@@ -18,7 +18,7 @@ const USE_EMULATOR = false; // set true only when running on an Android emulator
 //   'https://api.yesboss.example.com'
 // Leave '' for local dev (localhost via adb reverse / emulator). HTTPS is
 // required — Android blocks cleartext to non-local hosts by default.
-const PROD_API_URL = '';
+const PROD_API_URL = 'http://15.135.240.26:4000';
 
 export const BASE_URL =
   PROD_API_URL ||
