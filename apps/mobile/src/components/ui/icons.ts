@@ -12,6 +12,7 @@ export {
   // Header
   Bell,
   User,
+  Mic,
   // Call directions
   PhoneIncoming,
   PhoneOutgoing,

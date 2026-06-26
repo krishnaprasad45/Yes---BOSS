@@ -1,10 +1,12 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  Image,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -20,7 +22,7 @@ import {
 } from '@/hooks/useDashboard';
 import { useAppSelector } from '@/store/hooks';
 import { formatMinor } from '@/utils/formatters';
-import { font, radius, spacing } from '@/theme/theme';
+import { font, radius, shadow, spacing } from '@/theme/theme';
 import { useTheme } from '@/theme/ThemeContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import type { Palette } from '@/theme/palettes';
@@ -30,17 +32,25 @@ import {
   Bell,
   FileText,
   MapPin,
+  Mic,
   Phone,
   PhoneIncoming,
   PhoneMissed,
   PhoneOutgoing,
   Repeat,
   ReceiptText,
+  Sparkles,
   TrendingUp,
-  User,
   Wallet,
   type LucideIcon,
 } from '@/components/ui/icons';
+
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good Morning';
+  if (h < 17) return 'Good Afternoon';
+  return 'Good Evening';
+}
 
 function formatTalk(sec: number): string {
   if (sec <= 0) return '0m';
@@ -74,7 +84,9 @@ export function HomeScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  // AuthUser has no avatar field yet — read defensively, fall back to initials.
+  const avatarUrl = (user as { avatarUrl?: string } | null)?.avatarUrl;
   const overview = useDashboardStats();
   const digest = useDailyDigest();
   const subs = useSubscriptions();
@@ -132,22 +144,35 @@ export function HomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        {/* Header — notifications on the left, alerts + profile on the right */}
+        {/* Header — avatar + greeting on the left, notifications on the right */}
         <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <Avatar name={user?.name ?? 'there'} url={avatarUrl} tint={colors.iconIndigo} size={48} onPress={logout} />
+            <View>
+              <Text style={styles.greeting}>{greeting()},</Text>
+              <Text style={styles.name}>{user?.name ?? 'there'} 👋</Text>
+            </View>
+          </View>
           <TouchableOpacity style={styles.iconBtn} activeOpacity={0.8}>
             <Bell size={18} color={colors.text} strokeWidth={2.2} />
             <View style={styles.notifDot} />
           </TouchableOpacity>
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.8}>
-              <Bell size={18} color={colors.text} strokeWidth={2.2} />
-              <View style={styles.notifDot} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.8} onPress={logout}>
-              <User size={18} color={colors.text} strokeWidth={2.2} />
-            </TouchableOpacity>
-          </View>
         </View>
+
+        {/* Assistant prompt bar */}
+        <TouchableOpacity style={styles.assistantBar} activeOpacity={0.85}>
+          <View style={styles.assistantSpark}>
+            <Sparkles size={18} color={colors.iconPurple} strokeWidth={2.2} />
+          </View>
+          <TextInput
+            style={styles.assistantInput}
+            placeholder="Ask your assistant anything"
+            placeholderTextColor={colors.textMuted}
+            editable={false}
+            pointerEvents="none"
+          />
+          <Mic size={20} color={colors.textMuted} strokeWidth={2.2} />
+        </TouchableOpacity>
 
         {overview.isLoading && <ActivityIndicator style={{ marginTop: 32 }} size="large" color={colors.primary} />}
         {overview.error && <Text style={styles.error}>{overview.error.message}</Text>}
@@ -157,7 +182,9 @@ export function HomeScreen() {
           <>
             <View style={styles.overviewHead}>
               <Text style={styles.overviewTitle}>Today's Overview</Text>
-              <Text style={styles.overviewMeta}>Updated just now</Text>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Finance')}>
+                <Text style={styles.viewAll}>View all</Text>
+              </TouchableOpacity>
             </View>
             <View style={styles.grid}>
               <StatCard
@@ -379,15 +406,41 @@ function QuickAction({
   );
 }
 
-/** Circular contact avatar holding the first initial over a tinted disc. */
-function Avatar({ name, tint }: { name: string; tint: string }) {
+/**
+ * Circular avatar: shows the image at `url` when present, otherwise the first
+ * initial over a tinted disc. Optionally pressable (e.g. the header profile).
+ */
+function Avatar({
+  name,
+  tint,
+  url,
+  size = 44,
+  onPress,
+}: {
+  name: string;
+  tint: string;
+  url?: string;
+  size?: number;
+  onPress?: () => void;
+}) {
   const styles = useThemedStyles(makeStyles);
+  const dim = { width: size, height: size, borderRadius: size / 2 };
   const initial = name.trim().charAt(0).toUpperCase() || '#';
-  return (
-    <View style={[styles.avatar, { backgroundColor: tint + '22' }]}>
-      <Text style={[styles.avatarText, { color: tint }]}>{initial}</Text>
+  const inner = url ? (
+    <Image source={{ uri: url }} style={[styles.avatar, dim]} />
+  ) : (
+    <View style={[styles.avatar, dim, { backgroundColor: tint + '22' }]}>
+      <Text style={[styles.avatarText, { color: tint, fontSize: size * 0.4 }]}>{initial}</Text>
     </View>
   );
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+        {inner}
+      </TouchableOpacity>
+    );
+  }
+  return inner;
 }
 
 /** Big-number metric in the 30-day calls card. */
@@ -422,7 +475,9 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.xs,
   },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
+  greeting: { fontSize: font.size.sm, color: colors.textMuted },
+  name: { fontSize: font.size.xl, fontWeight: '700', color: colors.text },
   iconBtn: {
     width: 42,
     height: 42,
@@ -443,6 +498,28 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     backgroundColor: colors.primary,
   },
   error: { color: colors.danger, marginTop: spacing.lg },
+  // Assistant prompt bar
+  assistantBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.card,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    ...shadow.card,
+  },
+  assistantSpark: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    backgroundColor: colors.tilePurple,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  assistantInput: { flex: 1, fontSize: font.size.md, color: colors.text, padding: 0 },
   overviewHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -450,7 +527,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     marginBottom: spacing.xs,
   },
   overviewTitle: { fontSize: font.size.lg, fontWeight: '700', color: colors.text },
-  overviewMeta: { fontSize: font.size.sm, color: colors.textMuted },
+  viewAll: { fontSize: font.size.sm, fontWeight: '600', color: colors.primary },
   grid: { flexDirection: 'row', gap: spacing.md },
   callBreakdown: { gap: 5, alignItems: 'flex-end' },
   breakRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -505,7 +582,7 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   contactsCard: { padding: spacing.xs, gap: 0 },
   contactRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
   contactDivider: { borderTopWidth: 1, borderTopColor: colors.divider },
-  avatar: { width: 44, height: 44, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  avatar: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: colors.cardAlt },
   avatarText: { fontSize: font.size.lg, fontWeight: '700' },
   contactName: { fontSize: font.size.md, fontWeight: '600', color: colors.text },
   contactMeta: { fontSize: font.size.xs, color: colors.textMuted, marginTop: 2 },
