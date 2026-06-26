@@ -27,6 +27,7 @@ import { useTheme } from '@/theme/ThemeContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import type { Palette } from '@/theme/palettes';
 import { Card, IconTile, PressScale, SectionHeader, StatCard } from '@/components/ui';
+import { VoiceOverlay } from '@/components/feature/VoiceOverlay';
 import {
   BadgeCheck,
   Bell,
@@ -87,6 +88,7 @@ export function HomeScreen() {
   const { user, logout } = useAuth();
   // AuthUser has no avatar field yet — read defensively, fall back to initials.
   const avatarUrl = (user as { avatarUrl?: string } | null)?.avatarUrl;
+  const [voiceOpen, setVoiceOpen] = React.useState(false);
   const overview = useDashboardStats();
   const digest = useDailyDigest();
   const subs = useSubscriptions();
@@ -159,8 +161,11 @@ export function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Assistant prompt bar */}
-        <TouchableOpacity style={styles.assistantBar} activeOpacity={0.85}>
+        {/* Assistant prompt bar — opens the voice overlay */}
+        <TouchableOpacity
+          style={styles.assistantBar}
+          activeOpacity={0.85}
+          onPress={() => setVoiceOpen(true)}>
           <View style={styles.assistantSpark}>
             <Sparkles size={18} color={colors.iconPurple} strokeWidth={2.2} />
           </View>
@@ -367,6 +372,7 @@ export function HomeScreen() {
           </Card>
         )}
       </ScrollView>
+      <VoiceOverlay visible={voiceOpen} onClose={() => setVoiceOpen(false)} />
     </SafeAreaView>
   );
 }

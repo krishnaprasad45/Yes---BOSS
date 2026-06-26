@@ -11,6 +11,9 @@
     <!-- Missed-call auto-reply. -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.SEND_SMS" />
+    <!-- Voice assistant: mic capture (STT) + direct dial for "call <name>". -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
     <!-- Background post-call recap worker runs as a short foreground service. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- KM-traveled tracking (Phase 7): foreground GPS while the app is open. -->
