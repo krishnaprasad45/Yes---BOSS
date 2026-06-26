@@ -24,25 +24,23 @@ import { font, radius, spacing } from '@/theme/theme';
 import { useTheme } from '@/theme/ThemeContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import type { Palette } from '@/theme/palettes';
-import { Card, IconTile, SectionHeader, StatCard } from '@/components/ui';
+import { Card, IconTile, PressScale, SectionHeader, StatCard } from '@/components/ui';
 import {
+  BadgeCheck,
+  Bell,
+  FileText,
   MapPin,
   Phone,
   PhoneIncoming,
   PhoneMissed,
   PhoneOutgoing,
-  Power,
-  ReceiptText,
   Repeat,
+  ReceiptText,
+  TrendingUp,
+  User,
   Wallet,
+  type LucideIcon,
 } from '@/components/ui/icons';
-
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good Morning';
-  if (h < 17) return 'Good Afternoon';
-  return 'Good Evening';
-}
 
 function formatTalk(sec: number): string {
   if (sec <= 0) return '0m';
@@ -57,12 +55,26 @@ function formatHour(h: number): string {
   return `${display}${period}`;
 }
 
-/** Dashboard — greeting, today's overview grid, 30-day insights. */
+/** "Last called yesterday / 3 days ago" from an ISO timestamp. */
+function relativeDay(iso: string): string {
+  const then = new Date(iso);
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const days = Math.floor((start.getTime() - then.getTime()) / 86_400_000);
+  if (days <= 0) return 'Last called today';
+  if (days === 1) return 'Last called yesterday';
+  return `Last called ${days} days ago`;
+}
+
+// Rotating tint set so each contact avatar gets a stable, distinct color.
+const AVATAR_TINTS = ['iconOrange', 'iconIndigo', 'iconGreen', 'iconTeal', 'iconPurple'] as const;
+
+/** Dashboard — overview grid, quick actions, 30-day insights, top contacts. */
 export function HomeScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const overview = useDashboardStats();
   const digest = useDailyDigest();
   const subs = useSubscriptions();
@@ -86,6 +98,8 @@ export function HomeScreen() {
   const pendingSpentMinor = pendingTxns
     .filter(t => t.type === 'debit')
     .reduce((sum, t) => sum + t.amountMinor, 0);
+  const spentTodayMinor = (day?.spentMinor ?? 0) + pendingSpentMinor;
+  const billsDue = day?.billsDue ?? 0;
   // Count today's calls directly from the device-synced Redux cache — no backend round-trip.
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const todayCalls = cachedCalls.filter(c => c.occurredAt >= todayStart.toISOString());
@@ -100,20 +114,39 @@ export function HomeScreen() {
     { hour: -1, count: 0 },
   );
 
+  // Most-recent call time per contact name, to label top contacts with "last called".
+  const lastCallByName = React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of cachedCalls) {
+      if (!c.contactName) continue;
+      const prev = map.get(c.contactName);
+      if (!prev || c.occurredAt > prev) map.set(c.contactName, c.occurredAt);
+    }
+    return map;
+  }, [cachedCalls]);
+  const topContacts = stats?.calls.topContacts ?? [];
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        {/* Greeting header */}
+        {/* Header — notifications on the left, alerts + profile on the right */}
         <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.greeting}>{greeting()},</Text>
-            <Text style={styles.name}>{user?.name ?? 'there'} 👋</Text>
-          </View>
-          <TouchableOpacity style={styles.bell} onPress={logout}>
-            <Power size={18} color={colors.textMuted} strokeWidth={2.2} />
+          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.8}>
+            <Bell size={18} color={colors.text} strokeWidth={2.2} />
+            <View style={styles.notifDot} />
           </TouchableOpacity>
+          <View style={styles.headerRight}>
+            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.8}>
+              <Bell size={18} color={colors.text} strokeWidth={2.2} />
+              <View style={styles.notifDot} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.8} onPress={logout}>
+              <User size={18} color={colors.text} strokeWidth={2.2} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {overview.isLoading && <ActivityIndicator style={{ marginTop: 32 }} size="large" color={colors.primary} />}
@@ -122,7 +155,10 @@ export function HomeScreen() {
         {/* Today's overview grid — calls come from device cache, spend from server */}
         {(callsToday > 0 || day) && (
           <>
-            <SectionHeader title="Today's Overview" />
+            <View style={styles.overviewHead}>
+              <Text style={styles.overviewTitle}>Today's Overview</Text>
+              <Text style={styles.overviewMeta}>Updated just now</Text>
+            </View>
             <View style={styles.grid}>
               <StatCard
                 icon={Phone}
@@ -152,9 +188,10 @@ export function HomeScreen() {
                 icon={Wallet}
                 tint={colors.iconGreen}
                 tileBg={colors.tileGreen}
-                value={formatMinor((day?.spentMinor ?? 0) + pendingSpentMinor)}
+                value={formatMinor(spentTodayMinor)}
                 label="Spent Today"
                 onPress={() => navigation.navigate('Finance')}
+                accessory={spentTodayMinor === 0 ? <StatusPill label="No expenses today" /> : undefined}
               />
             </View>
             <View style={styles.grid}>
@@ -163,34 +200,101 @@ export function HomeScreen() {
                 tint={colors.iconTeal}
                 tileBg={colors.tileTeal}
                 value={distance.data ? `${distance.data.data.totalKm} km` : '—'}
-                label="Distance (30d)"
+                label="Distance"
+                accessory={<Text style={styles.cardLink}>Last 30 Days</Text>}
               />
-              <StatCard icon={ReceiptText} tint={colors.iconOrange} tileBg={colors.tileOrange} value={String(day?.billsDue ?? 0)} label="Bills Due" />
+              <StatCard
+                icon={ReceiptText}
+                tint={colors.iconOrange}
+                tileBg={colors.tileOrange}
+                value={String(billsDue)}
+                label="Bills Due"
+                accessory={billsDue === 0 ? <StatusPill label="You're all caught up!" /> : undefined}
+              />
             </View>
           </>
         )}
 
+        {/* Quick actions */}
+        <SectionHeader title="Quick Actions" />
+        <View style={styles.actionRow}>
+          <QuickAction
+            icon={Phone}
+            tint={colors.iconPurple}
+            label="View Call Log"
+            onPress={() => navigation.navigate('Calls', { screen: 'CallsList' })}
+          />
+          <QuickAction
+            icon={Wallet}
+            tint={colors.iconGreen}
+            label="Add Expense"
+            onPress={() => navigation.navigate('Finance')}
+          />
+          <QuickAction
+            icon={FileText}
+            tint={colors.iconOrange}
+            label="Pay Bill"
+            onPress={() => navigation.navigate('Finance')}
+          />
+          <QuickAction
+            icon={MapPin}
+            tint={colors.iconIndigo}
+            label="View Trips"
+            onPress={() => navigation.navigate('Finance')}
+          />
+        </View>
+
         {/* 30-day calls */}
         {stats && (
           <Card style={styles.block}>
-            <SectionHeader title="Last 30 days · Calls" />
-            <View style={styles.inlineStats}>
-              <Inline label="Total" value={String(stats.calls.total)} />
-              <Inline label="Missed" value={String(stats.calls.missed)} color={colors.danger} />
-              <Inline label="Talk time" value={formatTalk(stats.calls.totalTalkSec)} />
+            <View style={styles.thirtyHead}>
+              <Text style={styles.thirtyTitle}>Last 30 Days · Calls</Text>
+              <TouchableOpacity
+                style={styles.analyticsPill}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Finance')}>
+                <Text style={styles.analyticsText}>View Analytics</Text>
+                <TrendingUp size={13} color={colors.primary} strokeWidth={2.4} />
+              </TouchableOpacity>
             </View>
-            {stats.calls.topContacts.length > 0 && (
-              <View style={styles.list}>
-                <Text style={styles.listHead}>Top contacts</Text>
-                {stats.calls.topContacts.map(c => (
-                  <View key={c.name} style={styles.listRow}>
-                    <Text style={styles.listName}>{c.name}</Text>
-                    <Text style={styles.listVal}>{c.count}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
+            <View style={styles.metricRow}>
+              <Metric label="Total Calls" value={String(stats.calls.total)} />
+              <Metric label="Missed Calls" value={String(stats.calls.missed)} color={colors.danger} />
+              <Metric label="Talk Time" value={formatTalk(stats.calls.totalTalkSec)} color={colors.primary} />
+            </View>
           </Card>
+        )}
+
+        {/* Top contacts */}
+        {topContacts.length > 0 && (
+          <View style={styles.block}>
+            <SectionHeader
+              title="Top Contacts"
+              action="View All"
+              onAction={() => navigation.navigate('Calls', { screen: 'CallsList' })}
+            />
+            <Card style={styles.contactsCard}>
+              {topContacts.map((c, i) => {
+                const last = lastCallByName.get(c.name);
+                const tint = colors[AVATAR_TINTS[i % AVATAR_TINTS.length]];
+                return (
+                  <View
+                    key={c.name}
+                    style={[styles.contactRow, i > 0 && styles.contactDivider]}>
+                    <Avatar name={c.name} tint={tint} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.contactName} numberOfLines={1}>{c.name}</Text>
+                      {last && <Text style={styles.contactMeta}>{relativeDay(last)}</Text>}
+                    </View>
+                    <View style={styles.contactCount}>
+                      <Text style={styles.contactNum}>{c.count}</Text>
+                      <Text style={styles.contactNumLabel}>CALLS</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </Card>
+          </View>
         )}
 
         {/* 30-day money */}
@@ -240,6 +344,63 @@ export function HomeScreen() {
   );
 }
 
+/** Soft green "caught up" status row with a check, shown inside stat cards. */
+function StatusPill({ label }: { label: string }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View style={styles.statusPill}>
+      <BadgeCheck size={13} color={colors.success} strokeWidth={2.4} />
+      <Text style={styles.statusPillText} numberOfLines={1}>{label}</Text>
+    </View>
+  );
+}
+
+/** Quick-action tile: tinted icon over a label, springs on press. */
+function QuickAction({
+  icon: Icon,
+  tint,
+  label,
+  onPress,
+}: {
+  icon: LucideIcon;
+  tint: string;
+  label: string;
+  onPress?: () => void;
+}) {
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <PressScale onPress={onPress} containerStyle={styles.action} style={styles.actionInner}>
+      <View style={styles.actionTile}>
+        <Icon size={22} color={tint} strokeWidth={2.1} />
+      </View>
+      <Text style={styles.actionLabel} numberOfLines={1}>{label}</Text>
+    </PressScale>
+  );
+}
+
+/** Circular contact avatar holding the first initial over a tinted disc. */
+function Avatar({ name, tint }: { name: string; tint: string }) {
+  const styles = useThemedStyles(makeStyles);
+  const initial = name.trim().charAt(0).toUpperCase() || '#';
+  return (
+    <View style={[styles.avatar, { backgroundColor: tint + '22' }]}>
+      <Text style={[styles.avatarText, { color: tint }]}>{initial}</Text>
+    </View>
+  );
+}
+
+/** Big-number metric in the 30-day calls card. */
+function Metric({ label, value, color }: { label: string; value: string; color?: string }) {
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View style={styles.metric}>
+      <Text style={styles.metricLabel}>{label.toUpperCase()}</Text>
+      <Text style={[styles.metricValue, color ? { color } : null]} numberOfLines={1}>{value}</Text>
+    </View>
+  );
+}
+
 function Inline({ label, value, color }: { label: string; value: string; color?: string }) {
   const styles = useThemedStyles(makeStyles);
   return (
@@ -261,31 +422,101 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.xs,
   },
-  greeting: { fontSize: font.size.sm, color: colors.textMuted },
-  name: { fontSize: font.size.xxl, fontWeight: '700', color: colors.text },
-  bell: {
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  iconBtn: {
     width: 42,
     height: 42,
     borderRadius: radius.pill,
     backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  notifDot: {
+    position: 'absolute',
+    top: 11,
+    right: 13,
+    width: 7,
+    height: 7,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+  },
   error: { color: colors.danger, marginTop: spacing.lg },
+  overviewHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  overviewTitle: { fontSize: font.size.lg, fontWeight: '700', color: colors.text },
+  overviewMeta: { fontSize: font.size.sm, color: colors.textMuted },
   grid: { flexDirection: 'row', gap: spacing.md },
   callBreakdown: { gap: 5, alignItems: 'flex-end' },
   breakRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   breakNum: { fontSize: font.size.sm, fontWeight: '700', color: colors.text, minWidth: 14, textAlign: 'right' },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.successSoft,
+    borderRadius: radius.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    marginTop: 2,
+  },
+  statusPillText: { fontSize: font.size.xs, color: colors.success, fontWeight: '600', flexShrink: 1 },
+  cardLink: { fontSize: font.size.xs, fontWeight: '600', color: colors.primary, marginTop: 2 },
+  // Quick actions
+  actionRow: { flexDirection: 'row', gap: spacing.sm },
+  action: { flex: 1 },
+  actionInner: { alignItems: 'center', gap: 6 },
+  actionTile: {
+    width: '100%',
+    aspectRatio: 1,
+    maxHeight: 64,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionLabel: { fontSize: font.size.xs, color: colors.textMuted, fontWeight: '500', textAlign: 'center' },
   block: { gap: spacing.md },
+  // 30-day calls
+  thirtyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  thirtyTitle: { fontSize: font.size.lg, fontWeight: '700', color: colors.text },
+  analyticsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  analyticsText: { fontSize: font.size.sm, fontWeight: '600', color: colors.primary },
+  metricRow: { flexDirection: 'row', gap: spacing.sm },
+  metric: { flex: 1, backgroundColor: colors.cardAlt, borderRadius: radius.md, padding: spacing.md, gap: 4 },
+  metricLabel: { fontSize: font.size.xs, color: colors.textMuted, fontWeight: '600', letterSpacing: 0.4 },
+  metricValue: { fontSize: font.size.xl, fontWeight: '700', color: colors.text },
+  // Top contacts
+  contactsCard: { padding: spacing.xs, gap: 0 },
+  contactRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
+  contactDivider: { borderTopWidth: 1, borderTopColor: colors.divider },
+  avatar: { width: 44, height: 44, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: font.size.lg, fontWeight: '700' },
+  contactName: { fontSize: font.size.md, fontWeight: '600', color: colors.text },
+  contactMeta: { fontSize: font.size.xs, color: colors.textMuted, marginTop: 2 },
+  contactCount: { alignItems: 'flex-end' },
+  contactNum: { fontSize: font.size.lg, fontWeight: '700', color: colors.text },
+  contactNumLabel: { fontSize: 9, color: colors.textFaint, fontWeight: '600', letterSpacing: 0.6 },
+  // Shared
   inlineStats: { flexDirection: 'row', gap: spacing.md },
   inline: { flex: 1, backgroundColor: colors.cardAlt, borderRadius: radius.md, padding: spacing.md },
   inlineLabel: { fontSize: font.size.xs, color: colors.textMuted },
   inlineValue: { fontSize: font.size.lg, fontWeight: '700', color: colors.text, marginTop: 2 },
-  list: { backgroundColor: colors.cardAlt, borderRadius: radius.md, padding: spacing.md },
-  listHead: { fontSize: font.size.sm, fontWeight: '600', color: colors.textMuted, marginBottom: 6 },
-  listRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  listName: { fontSize: font.size.md, color: colors.text },
-  listVal: { fontSize: font.size.md, fontWeight: '700', color: colors.text },
   subRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 6 },
   subName: { fontSize: font.size.md, fontWeight: '600', color: colors.text },
   subMeta: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 1 },

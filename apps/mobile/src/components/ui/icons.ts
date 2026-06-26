@@ -9,6 +9,9 @@ export {
   Phone,
   ChartColumnBig,
   Settings2,
+  // Header
+  Bell,
+  User,
   // Call directions
   PhoneIncoming,
   PhoneOutgoing,
