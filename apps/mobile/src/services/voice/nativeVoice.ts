@@ -55,13 +55,18 @@ export function speak(text: string): Promise<void> {
   return initTts().then(
     () =>
       new Promise<void>(resolve => {
+        // react-native-tts's removeEventListener is broken on new RN (calls the
+        // removed `removeListener`); addEventListener returns a subscription, so
+        // tear down via subscription.remove() instead.
+        const subs: { remove: () => void }[] = [];
         const done = () => {
-          Tts.removeEventListener('tts-finish', done);
-          Tts.removeEventListener('tts-cancel', done);
+          subs.forEach(s => s.remove());
           resolve();
         };
-        Tts.addEventListener('tts-finish', done);
-        Tts.addEventListener('tts-cancel', done);
+        const add = (type: 'tts-finish' | 'tts-cancel') =>
+          subs.push(Tts.addEventListener(type, done) as unknown as { remove: () => void });
+        add('tts-finish');
+        add('tts-cancel');
         Tts.stop();
         Tts.speak(text);
       }),
