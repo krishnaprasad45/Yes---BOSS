@@ -152,9 +152,8 @@ export function VoiceOverlay({ visible, onClose }: { visible: boolean; onClose: 
         <View style={styles.center}>
           {/* Animated orb during listening/speaking, mic button otherwise */}
           <View style={styles.micWrap}>
-            {showOrb ? (
-              <AnimatedOrb size={220} primaryColor={colors.primary} secondaryColor={colors.iconIndigo} />
-            ) : (
+            <AnimatedOrb size={220} primaryColor={colors.primary} secondaryColor={colors.iconIndigo} />
+            {!showOrb && (
               <TouchableOpacity
                 style={styles.micBtn}
                 activeOpacity={0.85}
