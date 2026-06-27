@@ -6,13 +6,14 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Dimensions,
 } from 'react-native';
 import { font, radius, spacing } from '@/theme/theme';
 import { useTheme } from '@/theme/ThemeContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import type { Palette } from '@/theme/palettes';
 import { Mic, X } from '@/components/ui/icons';
-import { AnimatedOrb } from '@/components/feature/AnimatedOrb';
+import LottieView from 'lottie-react-native';
 import {
   destroyVoice,
   requestMicPermission,
@@ -142,35 +143,44 @@ export function VoiceOverlay({ visible, onClose }: { visible: boolean; onClose: 
   const showOrb = phase === 'listening' || phase === 'speaking';
   const tapToTalk = phase === 'listening' && !transcript;
 
+  const { height: screenHeight } = Dimensions.get('window');
+
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={close}>
-      <View style={styles.backdrop}>
+      <View style={[styles.backdrop, { height: screenHeight }]}>
         <TouchableOpacity style={styles.closeBtn} onPress={close} hitSlop={12}>
           <X size={22} color={colors.textMuted} strokeWidth={2.2} />
         </TouchableOpacity>
 
-        <View style={styles.center}>
-          {/* Animated orb during listening/speaking, mic button otherwise */}
-          <View style={styles.micWrap}>
-            <AnimatedOrb size={220} primaryColor={colors.primary} secondaryColor={colors.iconIndigo} />
-            {!showOrb && (
-              <TouchableOpacity
-                style={styles.micBtn}
-                activeOpacity={0.85}
-                disabled={phase !== 'listening'}
-                onPress={() => phase === 'listening' && converse()}>
-                <Mic size={34} color={colors.onPrimary} strokeWidth={2.2} />
-              </TouchableOpacity>
-            )}
-          </View>
+        {/* Lottie animation during listening/speaking */}
+        {showOrb && (
+          <LottieView
+            source={require('@/assets/animations/listener-lottie.json')}
+            autoPlay
+            loop
+            style={styles.lottie}
+          />
+        )}
 
+        {/* Mic button when not listening */}
+        {!showOrb && (
+          <TouchableOpacity
+            style={styles.micBtnCenter}
+            activeOpacity={0.85}
+            disabled={phase !== 'listening'}
+            onPress={() => phase === 'listening' && converse()}>
+            <Mic size={34} color={colors.onPrimary} strokeWidth={2.2} />
+          </TouchableOpacity>
+        )}
+
+        {/* Text content */}
+        <View style={styles.textContent}>
           <Text style={styles.hint}>{PHASE_HINT[phase]}</Text>
 
           {phase === 'thinking' && (
             <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.sm }} />
           )}
 
-          {/* Live transcript / reply */}
           {!!transcript && <Text style={styles.transcript}>{transcript}</Text>}
           {!!reply && <Text style={styles.reply}>{reply}</Text>}
 
@@ -192,7 +202,6 @@ const makeStyles = (colors: Palette) =>
     backdrop: {
       flex: 1,
       backgroundColor: 'rgba(5,20,36,0.92)',
-      paddingHorizontal: spacing.xl,
     },
     closeBtn: {
       position: 'absolute',
@@ -206,16 +215,37 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
       zIndex: 2,
     },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
-    micWrap: { width: 220, height: 220, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-    orbWrap: { position: 'absolute', width: 220, height: 220, alignItems: 'center', justifyContent: 'center' },
-    micBtn: {
+    lottie: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      width: 280,
+      height: 280,
+      marginTop: -140,
+      marginLeft: -140,
+    },
+    micBtnCenter: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
       width: 96,
       height: 96,
       borderRadius: 48,
       backgroundColor: colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
+      marginTop: -48,
+      marginLeft: -48,
+    },
+    textContent: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.lg,
+      alignItems: 'center',
+      gap: spacing.md,
     },
     hint: { fontSize: font.size.md, color: colors.textMuted, fontWeight: '600' },
     transcript: {
