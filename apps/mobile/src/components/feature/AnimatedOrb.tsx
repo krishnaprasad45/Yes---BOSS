@@ -3,8 +3,8 @@ import { Animated, Easing, View } from 'react-native';
 import Svg, { Circle, Path, Defs, RadialGradient, Stop } from 'react-native-svg';
 
 /**
- * Animated orb with flowing lines (teal → indigo).
- * Simple rotating design with glow effect.
+ * Glowing animated orb with flowing lines (purple → cyan).
+ * Used during voice listening/speaking states.
  */
 export function AnimatedOrb({
   size = 220,
@@ -46,23 +46,22 @@ export function AnimatedOrb({
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <Defs>
           <RadialGradient id="orbGlow" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={primaryColor} stopOpacity="0.5" />
-            <Stop offset="60%" stopColor={secondaryColor} stopOpacity="0.2" />
+            <Stop offset="0%" stopColor={primaryColor} stopOpacity="0.4" />
+            <Stop offset="70%" stopColor={secondaryColor} stopOpacity="0.15" />
             <Stop offset="100%" stopColor={secondaryColor} stopOpacity="0" />
           </RadialGradient>
         </Defs>
 
-        {/* Outer glow */}
+        {/* Outer glow circle */}
         <Circle cx={radius} cy={radius} r={radius * 0.95} fill="url(#orbGlow)" />
 
-        {/* Flowing wave lines */}
+        {/* Flowing lines (organic wave paths) */}
         <Path
           d={`M ${radius} ${radius * 0.2} Q ${radius * 0.3} ${radius * 0.4}, ${radius * 0.2} ${radius * 0.7} T ${radius * 0.4} ${radius * 1.4}`}
           stroke={primaryColor}
           strokeWidth="2.5"
           fill="none"
           opacity="0.7"
-          strokeLinecap="round"
         />
         <Path
           d={`M ${radius * 1.8} ${radius * 0.2} Q ${radius * 1.7} ${radius * 0.5}, ${radius * 1.8} ${radius * 0.8} T ${radius * 1.6} ${radius * 1.4}`}
@@ -70,7 +69,6 @@ export function AnimatedOrb({
           strokeWidth="2.5"
           fill="none"
           opacity="0.6"
-          strokeLinecap="round"
         />
         <Path
           d={`M ${radius * 0.5} ${radius * 0.1} Q ${radius * 1.2} ${radius * 0.3}, ${radius * 1.5} ${radius * 0.5} T ${radius * 1.7} ${radius * 1.3}`}
@@ -78,7 +76,6 @@ export function AnimatedOrb({
           strokeWidth="2"
           fill="none"
           opacity="0.5"
-          strokeLinecap="round"
         />
         <Path
           d={`M ${radius * 1.5} ${radius * 0.1} Q ${radius * 0.8} ${radius * 0.4}, ${radius * 0.5} ${radius * 0.8} T ${radius * 0.3} ${radius * 1.4}`}
@@ -86,7 +83,6 @@ export function AnimatedOrb({
           strokeWidth="2"
           fill="none"
           opacity="0.5"
-          strokeLinecap="round"
         />
 
         {/* Center bright core */}
