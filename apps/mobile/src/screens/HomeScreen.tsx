@@ -27,8 +27,8 @@ import { useTheme } from '@/theme/ThemeContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import type { Palette } from '@/theme/palettes';
 import { Card, IconTile, PressScale, SectionHeader, StatCard } from '@/components/ui';
+import { VoiceOverlay } from '@/components/feature/VoiceOverlay';
 import {
-  BadgeCheck,
   Bell,
   FileText,
   MapPin,
@@ -87,6 +87,7 @@ export function HomeScreen() {
   const { user, logout } = useAuth();
   // AuthUser has no avatar field yet — read defensively, fall back to initials.
   const avatarUrl = (user as { avatarUrl?: string } | null)?.avatarUrl;
+  const [voiceOpen, setVoiceOpen] = React.useState(false);
   const overview = useDashboardStats();
   const digest = useDailyDigest();
   const subs = useSubscriptions();
@@ -148,10 +149,6 @@ export function HomeScreen() {
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
             <Avatar name={user?.name ?? 'there'} url={avatarUrl} tint={colors.iconIndigo} size={48} onPress={logout} />
-            <View>
-              <Text style={styles.greeting}>{greeting()},</Text>
-              <Text style={styles.name}>{user?.name ?? 'there'} 👋</Text>
-            </View>
           </View>
           <TouchableOpacity style={styles.iconBtn} activeOpacity={0.8}>
             <Bell size={18} color={colors.text} strokeWidth={2.2} />
@@ -159,8 +156,11 @@ export function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Assistant prompt bar */}
-        <TouchableOpacity style={styles.assistantBar} activeOpacity={0.85}>
+        {/* Assistant prompt bar — opens the voice overlay */}
+        <TouchableOpacity
+          style={styles.assistantBar}
+          activeOpacity={0.85}
+          onPress={() => setVoiceOpen(true)}>
           <View style={styles.assistantSpark}>
             <Sparkles size={18} color={colors.iconPurple} strokeWidth={2.2} />
           </View>
@@ -218,7 +218,6 @@ export function HomeScreen() {
                 value={formatMinor(spentTodayMinor)}
                 label="Spent Today"
                 onPress={() => navigation.navigate('Finance')}
-                accessory={spentTodayMinor === 0 ? <StatusPill label="No expenses today" /> : undefined}
               />
             </View>
             <View style={styles.grid}>
@@ -236,7 +235,6 @@ export function HomeScreen() {
                 tileBg={colors.tileOrange}
                 value={String(billsDue)}
                 label="Bills Due"
-                accessory={billsDue === 0 ? <StatusPill label="You're all caught up!" /> : undefined}
               />
             </View>
           </>
@@ -367,19 +365,8 @@ export function HomeScreen() {
           </Card>
         )}
       </ScrollView>
+      <VoiceOverlay visible={voiceOpen} onClose={() => setVoiceOpen(false)} />
     </SafeAreaView>
-  );
-}
-
-/** Soft green "caught up" status row with a check, shown inside stat cards. */
-function StatusPill({ label }: { label: string }) {
-  const { colors } = useTheme();
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <View style={styles.statusPill}>
-      <BadgeCheck size={13} color={colors.success} strokeWidth={2.4} />
-      <Text style={styles.statusPillText} numberOfLines={1}>{label}</Text>
-    </View>
   );
 }
 
@@ -532,17 +519,6 @@ const makeStyles = (colors: Palette) => StyleSheet.create({
   callBreakdown: { gap: 5, alignItems: 'flex-end' },
   breakRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   breakNum: { fontSize: font.size.sm, fontWeight: '700', color: colors.text, minWidth: 14, textAlign: 'right' },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: colors.successSoft,
-    borderRadius: radius.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    marginTop: 2,
-  },
-  statusPillText: { fontSize: font.size.xs, color: colors.success, fontWeight: '600', flexShrink: 1 },
   cardLink: { fontSize: font.size.xs, fontWeight: '600', color: colors.primary, marginTop: 2 },
   // Quick actions
   actionRow: { flexDirection: 'row', gap: spacing.sm },

@@ -1,0 +1,267 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Dimensions,
+} from 'react-native';
+import { font, radius, spacing } from '@/theme/theme';
+import { useTheme } from '@/theme/ThemeContext';
+import { useThemedStyles } from '@/theme/useThemedStyles';
+import type { Palette } from '@/theme/palettes';
+import { Mic, X } from '@/components/ui/icons';
+import LottieView from 'lottie-react-native';
+import {
+  destroyVoice,
+  requestMicPermission,
+  speak,
+  startListening,
+  stopListening,
+  stopSpeaking,
+} from '@/services/voice/nativeVoice';
+
+const GREETING = 'Yes Boss! How can I help?';
+
+type Phase = 'greeting' | 'listening' | 'thinking' | 'speaking' | 'denied' | 'error';
+
+const PHASE_HINT: Record<Phase, string> = {
+  greeting: 'Starting…',
+  listening: 'Listening…',
+  thinking: 'Thinking…',
+  speaking: 'Speaking…',
+  denied: 'Microphone permission needed',
+  error: 'Something went wrong',
+};
+
+/**
+ * Full-screen voice assistant overlay (Phase 0 — on-device echo).
+ *
+ * Flow: greet (TTS) → listen (STT) → echo the transcript back (TTS) → idle,
+ * with a tap-to-talk button to go again. Phase 1 swaps the echo for a backend
+ * intent call. The pulsing rings use the built-in Animated API (no native dep).
+ */
+export function VoiceOverlay({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const [phase, setPhase] = useState<Phase>('greeting');
+  const [transcript, setTranscript] = useState('');
+  const [reply, setReply] = useState('');
+
+  // Latest phase in a ref so async callbacks don't capture a stale value.
+  const phaseRef = useRef<Phase>('greeting');
+  const setPhaseSafe = useCallback((p: Phase) => {
+    phaseRef.current = p;
+    setPhase(p);
+  }, []);
+
+
+  /** Listen for one utterance, resolve with the final transcript (or ''). */
+  const listenOnce = useCallback(
+    () =>
+      new Promise<string>(resolve => {
+        let settled = false;
+        const finish = (text: string) => {
+          if (settled) return;
+          settled = true;
+          stopListening();
+          resolve(text);
+        };
+        setTranscript('');
+        startListening({
+          onPartial: t => setTranscript(t),
+          onResult: t => {
+            setTranscript(t);
+            finish(t);
+          },
+          onEnd: () => finish(''),
+          onError: () => finish(''),
+        }).catch(() => finish(''));
+      }),
+    [],
+  );
+
+  // Closed flag flips on unmount so the recursive loop stops cleanly.
+  const closedRef = useRef(false);
+
+  /**
+   * One conversational turn, then recurse to keep listening for follow-ups
+   * until the overlay closes. Phase 0 just echoes; Phase 1 calls the backend.
+   */
+  const converse = useCallback(async () => {
+    if (closedRef.current) return;
+    setReply('');
+    setPhaseSafe('listening');
+    const said = await listenOnce();
+    if (closedRef.current) return;
+    if (!said) return; // silence — wait for a mic tap to go again
+
+    setPhaseSafe('thinking');
+    // Phase 0: echo. Phase 1 replaces this with the backend intent call.
+    const answer = `You said: ${said}`;
+    setReply(answer);
+    setPhaseSafe('speaking');
+    await speak(answer);
+    if (closedRef.current) return;
+    await converse();
+  }, [listenOnce, setPhaseSafe]);
+
+  // Drive the whole session when the overlay opens.
+  useEffect(() => {
+    if (!visible) return;
+    closedRef.current = false;
+    (async () => {
+      setTranscript('');
+      setReply('');
+      const ok = await requestMicPermission();
+      if (closedRef.current) return;
+      if (!ok) {
+        setPhaseSafe('denied');
+        return;
+      }
+      setPhaseSafe('greeting');
+      await speak(GREETING);
+      if (closedRef.current) return;
+      await converse();
+    })();
+    return () => {
+      closedRef.current = true;
+      stopSpeaking();
+      destroyVoice();
+    };
+  }, [visible, converse, setPhaseSafe]);
+
+  const close = () => {
+    closedRef.current = true;
+    stopSpeaking();
+    destroyVoice();
+    onClose();
+  };
+
+  const showOrb = phase === 'listening' || phase === 'speaking';
+  const tapToTalk = phase === 'listening' && !transcript;
+
+  const { height: screenHeight } = Dimensions.get('window');
+
+  return (
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={close}>
+      <View style={[styles.backdrop, { height: screenHeight }]}>
+        <TouchableOpacity style={styles.closeBtn} onPress={close} hitSlop={12}>
+          <X size={22} color={colors.textMuted} strokeWidth={2.2} />
+        </TouchableOpacity>
+
+        {/* Lottie animation during listening/speaking */}
+        {showOrb && (
+          <LottieView
+            source={require('@/assets/animations/listener-lottie.json')}
+            autoPlay
+            loop
+            style={styles.lottie}
+          />
+        )}
+
+        {/* Mic button when not listening */}
+        {!showOrb && (
+          <TouchableOpacity
+            style={styles.micBtnCenter}
+            activeOpacity={0.85}
+            disabled={phase !== 'listening'}
+            onPress={() => phase === 'listening' && converse()}>
+            <Mic size={34} color={colors.onPrimary} strokeWidth={2.2} />
+          </TouchableOpacity>
+        )}
+
+        {/* Text content */}
+        <View style={styles.textContent}>
+          <Text style={styles.hint}>{PHASE_HINT[phase]}</Text>
+
+          {phase === 'thinking' && (
+            <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.sm }} />
+          )}
+
+          {!!transcript && <Text style={styles.transcript}>{transcript}</Text>}
+          {!!reply && <Text style={styles.reply}>{reply}</Text>}
+
+          {tapToTalk && <Text style={styles.cta}>Tap the mic and speak</Text>}
+
+          {(phase === 'denied' || phase === 'error') && (
+            <TouchableOpacity style={styles.retry} onPress={close}>
+              <Text style={styles.retryText}>Close</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const makeStyles = (colors: Palette) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(5,20,36,0.92)',
+    },
+    closeBtn: {
+      position: 'absolute',
+      top: 56,
+      right: spacing.xl,
+      width: 42,
+      height: 42,
+      borderRadius: radius.pill,
+      backgroundColor: colors.card,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 2,
+    },
+    lottie: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      width: 280,
+      height: 280,
+      marginTop: -140,
+      marginLeft: -140,
+    },
+    micBtnCenter: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      width: 96,
+      height: 96,
+      borderRadius: 48,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: -48,
+      marginLeft: -48,
+    },
+    textContent: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.lg,
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    hint: { fontSize: font.size.md, color: colors.textMuted, fontWeight: '600' },
+    transcript: {
+      fontSize: font.size.xl,
+      fontWeight: '700',
+      color: colors.text,
+      textAlign: 'center',
+    },
+    reply: { fontSize: font.size.md, color: colors.primary, textAlign: 'center' },
+    cta: { fontSize: font.size.sm, color: colors.textFaint },
+    retry: {
+      marginTop: spacing.md,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      borderRadius: radius.pill,
+      backgroundColor: colors.card,
+    },
+    retryText: { color: colors.text, fontWeight: '600' },
+  });

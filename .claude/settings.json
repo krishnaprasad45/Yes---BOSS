@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew assembleRelease -q)",
+      "Bash(adb -s c71cd678 install -r D:/yes_boss/apps/mobile/android/app/build/outputs/apk/release/app-release.apk)"
+    ]
+  }
+}
