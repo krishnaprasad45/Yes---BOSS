@@ -150,20 +150,19 @@ export function VoiceOverlay({ visible, onClose }: { visible: boolean; onClose: 
         </TouchableOpacity>
 
         <View style={styles.center}>
-          {/* Animated orb + mic button */}
+          {/* Animated orb during listening/speaking, mic button otherwise */}
           <View style={styles.micWrap}>
-            {showOrb && (
-              <View style={styles.orbWrap}>
-                <AnimatedOrb size={220} primaryColor={colors.primary} secondaryColor={colors.iconIndigo} />
-              </View>
+            {showOrb ? (
+              <AnimatedOrb size={220} primaryColor={colors.primary} secondaryColor={colors.iconIndigo} />
+            ) : (
+              <TouchableOpacity
+                style={styles.micBtn}
+                activeOpacity={0.85}
+                disabled={phase !== 'listening'}
+                onPress={() => phase === 'listening' && converse()}>
+                <Mic size={34} color={colors.onPrimary} strokeWidth={2.2} />
+              </TouchableOpacity>
             )}
-            <TouchableOpacity
-              style={styles.micBtn}
-              activeOpacity={0.85}
-              disabled={phase !== 'listening'}
-              onPress={() => phase === 'listening' && converse()}>
-              <Mic size={34} color={colors.onPrimary} strokeWidth={2.2} />
-            </TouchableOpacity>
           </View>
 
           <Text style={styles.hint}>{PHASE_HINT[phase]}</Text>
