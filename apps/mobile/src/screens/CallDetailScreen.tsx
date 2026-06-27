@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Call } from '@yes-boss/shared';
 import type { CallsStackParamList } from '@/navigation/CallsStack';
-import { useGenerateRecap, useRecapStatus } from '@/hooks/useCallRecap';
+import { useCall, useGenerateRecap, useRecapStatus } from '@/hooks/useCallRecap';
 import { formatDateTime } from '@/utils/formatters';
 import { font, radius, spacing } from '@/theme/theme';
 import { useThemedStyles } from '@/theme/useThemedStyles';
@@ -16,13 +16,24 @@ type Props = NativeStackScreenProps<CallsStackParamList, 'CallDetail'>;
 export function CallDetailScreen({ route }: Props) {
   const styles = useThemedStyles(makeStyles);
   const [call, setCall] = useState<Call>(route.params.call);
+  const callQuery = useCall(call.id);
   const status = useRecapStatus();
   const recap = useGenerateRecap();
+
+  // Update call state when fresh data comes from query
+  useEffect(() => {
+    if (callQuery.data?.data) {
+      setCall(callQuery.data.data);
+    }
+  }, [callQuery.data?.data]);
 
   const providersReady = status.data?.data.transcription && status.data?.data.summary;
 
   const onRecap = (force: boolean) => {
-    recap.mutate({ callId: call.id, force }, { onSuccess: res => setCall(res.data) });
+    recap.mutate({ callId: call.id, force }, { onSuccess: res => {
+      setCall(res.data);
+      callQuery.refetch();
+    }});
   };
 
   return (

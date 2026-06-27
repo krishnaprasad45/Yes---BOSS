@@ -85,6 +85,17 @@ export class CallController {
     return ok(call, "Recording uploaded");
   }
 
+  @Get(":id")
+  @ApiOperation({ summary: "Fetch a single call by ID" })
+  @ApiParam({ name: "id", description: "Call record UUID", example: "clxyz123abc" })
+  @ApiResponse({ status: 200, description: "Call record", type: SuccessResponseDto })
+  @ApiResponse({ status: 401, description: "Unauthorized", type: ErrorResponseDto })
+  @ApiResponse({ status: 404, description: "Call not found", type: ErrorResponseDto })
+  async getById(@Param("id") id: string) {
+    const call = await this.service.getById(id);
+    return ok(call, "Call record retrieved");
+  }
+
   @Get()
   @ApiOperation({ summary: "List call records (paginated)" })
   @ApiResponse({ status: 200, description: "Paginated call list", type: PaginatedResponseDto })

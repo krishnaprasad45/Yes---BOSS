@@ -28,6 +28,10 @@ function buildQueryString(params: Record<string, unknown>): string {
 
 const BASE = '/api/v1/calls';
 
+export async function getCall(id: string): Promise<ItemResponse<Call>> {
+  return apiFetch<ItemResponse<Call>>(`${BASE}/${id}`);
+}
+
 export async function listCalls(params: CallListParams): Promise<Paginated<Call>> {
   const qs = buildQueryString({ ...params });
   return apiFetch<Paginated<Call>>(`${BASE}${qs ? `?${qs}` : ''}`);

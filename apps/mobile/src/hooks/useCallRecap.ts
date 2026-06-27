@@ -1,7 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import type { Call } from '@yes-boss/shared';
-import { generateRecap, getRecapStatus } from '@/services/api/calls.api';
+import { generateRecap, getCall, getRecapStatus } from '@/services/api/calls.api';
+
+export function useCall(id: string) {
+  return useQuery({
+    queryKey: ['calls', id],
+    queryFn: () => getCall(id),
+  });
+}
 
 export function useRecapStatus() {
   return useQuery({

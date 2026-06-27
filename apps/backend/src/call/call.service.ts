@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import type { Call } from "@yes-boss/shared";
 import { PrismaService } from "../prisma/prisma.service";
@@ -74,6 +74,28 @@ export class CallService {
     return this.toCall(row);
   }
 
+  async getById(id: string): Promise<Call> {
+    const call = await this.prisma.call.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        contactName: true,
+        phoneNumber: true,
+        direction: true,
+        durationSec: true,
+        occurredAt: true,
+        recordingUrl: true,
+        sourceFileName: true,
+        transcript: true,
+        summary: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    if (!call) throw new NotFoundException("Call not found");
+    return this.toCall(call);
+  }
+
   async list(
     query: ListCallsDto,
   ): Promise<{ data: Call[]; total: number; page: number; limit: number }> {
@@ -84,6 +106,20 @@ export class CallService {
     const [rows, total] = await Promise.all([
       this.prisma.call.findMany({
         where,
+        select: {
+          id: true,
+          contactName: true,
+          phoneNumber: true,
+          direction: true,
+          durationSec: true,
+          occurredAt: true,
+          recordingUrl: true,
+          sourceFileName: true,
+          transcript: true,
+          summary: true,
+          createdAt: true,
+          updatedAt: true,
+        },
         orderBy: { occurredAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
