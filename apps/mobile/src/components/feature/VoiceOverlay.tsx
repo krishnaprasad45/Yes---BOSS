@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Animated,
-  Easing,
   Modal,
   StyleSheet,
   Text,
@@ -14,6 +12,7 @@ import { useTheme } from '@/theme/ThemeContext';
 import { useThemedStyles } from '@/theme/useThemedStyles';
 import type { Palette } from '@/theme/palettes';
 import { Mic, X } from '@/components/ui/icons';
+import { AnimatedOrb } from '@/components/feature/AnimatedOrb';
 import {
   destroyVoice,
   requestMicPermission,
@@ -57,26 +56,6 @@ export function VoiceOverlay({ visible, onClose }: { visible: boolean; onClose: 
     setPhase(p);
   }, []);
 
-  // Pulsing-ring animation, driven while listening/speaking.
-  const pulse = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const active = phase === 'listening' || phase === 'speaking';
-    if (!active) {
-      pulse.stopAnimation();
-      pulse.setValue(0);
-      return;
-    }
-    const loop = Animated.loop(
-      Animated.timing(pulse, {
-        toValue: 1,
-        duration: 1600,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [phase, pulse]);
 
   /** Listen for one utterance, resolve with the final transcript (or ''). */
   const listenOnce = useCallback(
@@ -160,26 +139,7 @@ export function VoiceOverlay({ visible, onClose }: { visible: boolean; onClose: 
     onClose();
   };
 
-  const ringStyle = (delay: number) => {
-    const t = Animated.add(pulse, delay) as unknown as Animated.Value;
-    return {
-      transform: [
-        {
-          scale: t.interpolate({
-            inputRange: [0, 1, 2],
-            outputRange: [1, 2.2, 1],
-            extrapolate: 'clamp',
-          }),
-        },
-      ],
-      opacity: t.interpolate({
-        inputRange: [0, 0.6, 1],
-        outputRange: [0.35, 0.12, 0],
-        extrapolate: 'clamp',
-      }),
-    };
-  };
-
+  const showOrb = phase === 'listening' || phase === 'speaking';
   const tapToTalk = phase === 'listening' && !transcript;
 
   return (
@@ -190,10 +150,13 @@ export function VoiceOverlay({ visible, onClose }: { visible: boolean; onClose: 
         </TouchableOpacity>
 
         <View style={styles.center}>
-          {/* Animated mic with pulsing rings */}
+          {/* Animated orb + mic button */}
           <View style={styles.micWrap}>
-            <Animated.View style={[styles.ring, ringStyle(0)]} />
-            <Animated.View style={[styles.ring, ringStyle(0.5)]} />
+            {showOrb && (
+              <View style={styles.orbWrap}>
+                <AnimatedOrb size={220} primaryColor={colors.primary} secondaryColor={colors.iconIndigo} />
+              </View>
+            )}
             <TouchableOpacity
               style={styles.micBtn}
               activeOpacity={0.85}
@@ -246,14 +209,8 @@ const makeStyles = (colors: Palette) =>
       zIndex: 2,
     },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
-    micWrap: { width: 220, height: 220, alignItems: 'center', justifyContent: 'center' },
-    ring: {
-      position: 'absolute',
-      width: 100,
-      height: 100,
-      borderRadius: 50,
-      backgroundColor: colors.primary,
-    },
+    micWrap: { width: 220, height: 220, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+    orbWrap: { position: 'absolute', width: 220, height: 220, alignItems: 'center', justifyContent: 'center' },
     micBtn: {
       width: 96,
       height: 96,
